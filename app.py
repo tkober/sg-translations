@@ -47,6 +47,16 @@ def readTranslations(translationsDirectory, pattern='*.properties.ts', languagTa
 
     return result
 
+def buildTranslationsDictionary(translations):
+    result = {}
+    for locale, _, jsonObject in translations:
+        for key in jsonObject.keys():
+            if key in result:
+                result[key][locale] = jsonObject[key]
+            else:
+                result[key] = { locale: jsonObject[key] }
+
+    return result
 
 def main():
     argparser = argparse.ArgumentParser(
@@ -60,12 +70,8 @@ def main():
 
     translationsDirectory = '/Users/kober/code/java/taloom/just-hire-angular/src/app/commons/provider/translation/resources';
     translations = readTranslations(translationsDirectory)
+    dictionary = buildTranslationsDictionary(translations)
 
-    for a, b, c in translations:
-        print(a)
-        print(b)
-        print(c)
-        print('==========')
 
 
 if __name__ == '__main__':

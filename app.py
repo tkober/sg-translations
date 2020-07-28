@@ -134,9 +134,12 @@ def applyDiff(key, diff, translations):
         if Diff.DELETED == diffType:
             continue
 
-def addTranslation(key, value, filePath, indentation='    '):
+def buildTranslationLine(key, value, blockLevel, indentation='    '):
+    return '\n{}{}: {},'.format(indentation*blockLevel, key.__repr__(), value.__repr__())
+
+def addTranslation(key, value, filePath):
     blockLevel = BLOCK_LEVEL+1
-    line = '\n{}{}: {},'.format(indentation*blockLevel, key.__repr__(), value.__repr__())
+    line = buildTranslationLine(key, value, blockLevel)
 
     file = open(filePath, 'r')
     content = file.read()

@@ -6,9 +6,11 @@ import json
 import tempfile, os
 import ast
 
+BLOCK_LEVEL = 2
+
 class Diff(Enum):
-    ADDED = 1,
-    UPDATED = 2,
+    ADDED = 1
+    UPDATED = 2
     DELETED = 3
 
 
@@ -31,11 +33,11 @@ def findNthOccurrenceFromBehind(string, substring, n):
 
     return index
 
-def readTranslations(translationsDirectory, pattern='*.properties.ts', languagTag=lambda filename: filename.split('.')[0], blockLevel=2):
+def readTranslations(translationsDirectory, pattern='*.properties.ts', languagTag=lambda filename: filename.split('.')[0], blockLevel=BLOCK_LEVEL):
     files = { languagTag(f.name): f for f in Path(translationsDirectory).rglob(pattern) }
     languages = list(files.keys())
 
-    result = []
+    result = {}
 
     for language in languages:
         file = open(files[language], 'r')
@@ -52,13 +54,13 @@ def readTranslations(translationsDirectory, pattern='*.properties.ts', languagTa
         jsonString = p.stdout.decode('utf-8')
         translationJson = json.loads(jsonString)
 
-        result.append((language, files[language], translationJson))
+        result[language] = (files[language], translationJson)
 
     return result
 
 def buildTranslationsDictionary(translations):
     result = {}
-    for locale, _, jsonObject in translations:
+    for locale, (_, jsonObject) in translations.items():
         for key in jsonObject.keys():
             if key in result:
                 result[key][locale] = jsonObject[key]
@@ -118,21 +120,52 @@ def getDiff(old, new, allLanguages):
 
     return result
 
-def updateTranslation(key, updatedTranslation, dictionary, allLanguages):
+def applyDiff(key, diff, translations):
+    for lang, value, diffType in diff:
+
+        if Diff.ADDED == diffType:
+            file, _ = translations[lang]
+            addTranslation(key, value, file)
+            continue
+
+        if Diff.UPDATED == diffType:
+            continue
+
+        if Diff.DELETED == diffType:
+            continue
+
+def addTranslation(key, value, filePath, indentation='    '):
+    blockLevel = BLOCK_LEVEL+1
+    line = '\n{}{}: {},'.format(indentation*blockLevel, key.__repr__(), value.__repr__())
+
+    file = open(filePath, 'r')
+    content = file.read()
+    file.close()
+
+    index = findNthOccurrence(content, '{', blockLevel)
+    index = index+1
+    content = content[:index] + line + content[index:]
+
+    file = open(filePath, 'w')
+    file.write(content)
+    file.close()
+
+
+def updateTranslation(key, updatedTranslation, dictionary, allLanguages, translations):
     oldValues = translationFromDictionary(key, dictionary)
     newValues = ast.literal_eval(updatedTranslation)
-    diff = getDiff(oldValues, newValues, allLanguages)
 
-    print(diff)
+    diff = getDiff(oldValues, newValues, allLanguages)
+    applyDiff(key, diff, translations)
 
 def editTranslationForKey(key, dictionary, translations):
-    allLanguages = [l for l, _, _ in translations]
+    allLanguages = list(translations.keys())
     allLanguages.sort()
 
     changed, content = openEditor(key, dictionary, allLanguages)
 
     if changed:
-        updateTranslation(key, content, dictionary, allLanguages)
+        updateTranslation(key, content, dictionary, allLanguages, translations)
 
 def main():
     argparser = argparse.ArgumentParser(

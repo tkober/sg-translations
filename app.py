@@ -5,6 +5,7 @@ from subprocess import run, PIPE, call
 import json
 import tempfile, os
 import ast
+import re
 
 BLOCK_LEVEL = 2
 
@@ -112,30 +113,55 @@ def getDiff(old, new, allLanguages):
         if oldTranslation != newTranslation:
 
             if oldTranslation is None:
-                result.append((lang, newTranslation, Diff.ADDED))
+                result.append((lang, newTranslation, oldTranslation, Diff.ADDED))
             elif newTranslation is None:
-                result.append((lang, newTranslation, Diff.DELETED))
+                result.append((lang, newTranslation, oldTranslation, Diff.DELETED))
             else:
-                result.append((lang, newTranslation, Diff.UPDATED))
+                result.append((lang, newTranslation, oldTranslation, Diff.UPDATED))
 
     return result
 
 def applyDiff(key, diff, translations):
-    for lang, value, diffType in diff:
+    for lang, newValue, oldValue, diffType in diff:
+        file, _ = translations[lang]
 
         if Diff.ADDED == diffType:
-            file, _ = translations[lang]
-            addTranslation(key, value, file)
-            continue
+            addTranslation(key, newValue, file)
 
-        if Diff.UPDATED == diffType:
-            continue
+        elif Diff.UPDATED == diffType:
+            changeTranslationLine(file, key, newValue, oldValue)
 
-        if Diff.DELETED == diffType:
-            continue
+        elif Diff.DELETED == diffType:
+            changeTranslationLine(file, key, None, oldValue)
 
 def buildTranslationLine(key, value, blockLevel, indentation='    '):
     return '\n{}{}: {},'.format(indentation*blockLevel, key.__repr__(), value.__repr__())
+
+def buildUpdatePattern(key, value):
+    KEY = key.__repr__()
+    VALUE = value.__repr__()
+    regex = r"\s*" + re.escape(KEY) + r"\s*[:]\s*" + re.escape(VALUE) + r"\s*,?\s*\n"
+
+    return regex
+
+
+def changeTranslationLine(filePath, key, newValue, oldValue):
+    line = ''
+    if newValue is not None:
+        blockLevel = BLOCK_LEVEL + 1
+        line = buildTranslationLine(key, newValue, blockLevel)
+    line = line + '\n'
+
+    updatePattern = buildUpdatePattern(key, oldValue)
+
+    file = open(filePath, 'r')
+    content = file.read()
+    file.close()
+
+    content = re.sub(updatePattern, line, content)
+    file = open(filePath, 'w')
+    file.write(content)
+    file.close()
 
 def addTranslation(key, value, filePath):
     blockLevel = BLOCK_LEVEL+1

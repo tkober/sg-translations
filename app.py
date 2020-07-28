@@ -6,6 +6,18 @@ import json
 import tempfile, os
 import ast
 import re
+import curses
+from gupy.geometry import Padding
+from gupy.screen import ConstrainedBasedScreen
+from gupy.view import ListView, Label, HBox, BackgroundView
+
+KEY_Q=ord('q')
+
+COLOR_PAIR_DEFAULT=0
+COLOR_PAIR_SELECTED=1
+COLOR_PAIR_KEY=2
+COLOR_PAIR_DESCRIPTION=3
+COLOR_PAIR_FILTER=4
 
 BLOCK_LEVEL = 2
 
@@ -215,7 +227,32 @@ def main():
         editTranslationForKey(key, dictionary, translations)
 
     else:
-        print("List is not yet implemented!")
+        curses.wrapper(interactive)
+
+def interactive(stdscr):
+
+    curses.curs_set(0)
+    curses.init_pair(COLOR_PAIR_SELECTED, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(COLOR_PAIR_KEY, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(COLOR_PAIR_DESCRIPTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair(COLOR_PAIR_FILTER, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
+
+    screen = ConstrainedBasedScreen(stdscr)
+
+    wip_label = Label("   Not yet implemented   ")
+    wip_label.attributes.append(curses.color_pair(COLOR_PAIR_FILTER))
+    wip_label.attributes.append(curses.A_BOLD)
+
+    wip_hbox = HBox()
+    wip_hbox.add_view(wip_label, Padding(0, 0, 0, 0))
+    screen.add_view(wip_hbox, lambda w, h, v: ((w - v.required_size().width) // 2, h//2, wip_hbox.required_size().width + 1, 1))
+
+    while 1:
+        screen.render()
+        key = stdscr.getch()
+
+        if key == KEY_Q:
+            exit(0)
 
 
 if __name__ == '__main__':

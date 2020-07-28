@@ -2,7 +2,8 @@ import argparse
 from pathlib import Path
 from subprocess import run, PIPE, call
 import json
-import sys, tempfile, os
+import tempfile, os
+import ast
 
 def findNthOccurrence(string, substring, n):
     parts= string.split(substring, n)
@@ -83,9 +84,39 @@ def openEditor(key, dictionary, allLanguages):
 
         tf.seek(0)
         updatedContent = tf.read()
+        updatedContent = updatedContent.strip()
         changed = updatedContent != editorContent
 
-        print(changed)
+        return (changed, updatedContent)
+
+
+def getDiff(old, new, allLanguages):
+    result = {}
+
+    for lang in allLanguages:
+        oldTranslation = old[lang] if lang in old else None
+        newTranslation = new[lang] if lang in new else None
+
+        if oldTranslation != newTranslation:
+            result[lang] = newTranslation
+
+    return result
+
+def updateTranslation(key, updatedTranslation, dictionary, allLanguages):
+    oldValues = dictionary[key]
+    newValues = ast.literal_eval(updatedTranslation)
+    diff = getDiff(oldValues, newValues, allLanguages)
+
+    print(diff)
+
+def editTranslationForKey(key, dictionary, translations):
+    allLanguages = [l for l, _, _ in translations]
+    allLanguages.sort()
+
+    changed, content = openEditor(key, dictionary, allLanguages)
+
+    if changed:
+        updateTranslation(key, content, dictionary, allLanguages)
 
 def main():
     argparser = argparse.ArgumentParser(
@@ -100,11 +131,11 @@ def main():
     translationsDirectory = '/Users/kober/code/java/taloom/just-hire-angular/src/app/commons/provider/translation/resources';
     translations = readTranslations(translationsDirectory)
     dictionary = buildTranslationsDictionary(translations)
-    allLanguages = [ l for l, _, _ in translations ]
-    allLanguages.sort()
 
     if args.KEY is not None and args.KEY in dictionary:
-        openEditor(args.KEY, dictionary, allLanguages)
+        key = args.KEY
+        editTranslationForKey(key, dictionary, translations)
+
     else:
         print("List is not yet implemented!")
 

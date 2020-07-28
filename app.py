@@ -1,9 +1,16 @@
 import argparse
+from enum import Enum
 from pathlib import Path
 from subprocess import run, PIPE, call
 import json
 import tempfile, os
 import ast
+
+class Diff(Enum):
+    ADDED = 1,
+    UPDATED = 2,
+    DELETED = 3
+
 
 def findNthOccurrence(string, substring, n):
     parts= string.split(substring, n)
@@ -60,6 +67,9 @@ def buildTranslationsDictionary(translations):
 
     return result
 
+def translationFromDictionary(key, dictionary):
+    return dictionary[key] if key in dictionary else {}
+
 def buildEditorContent(entry, allLanguages):
     completeEntry = {}
     for lang in allLanguages:
@@ -73,7 +83,7 @@ def buildEditorContent(entry, allLanguages):
     return result
 
 def openEditor(key, dictionary, allLanguages):
-    entry = dictionary[key]
+    entry = translationFromDictionary(key, dictionary)
     editorContent = buildEditorContent(entry, allLanguages)
 
     EDITOR = os.environ.get('EDITOR', 'vim')
@@ -91,19 +101,25 @@ def openEditor(key, dictionary, allLanguages):
 
 
 def getDiff(old, new, allLanguages):
-    result = {}
+    result = []
 
     for lang in allLanguages:
         oldTranslation = old[lang] if lang in old else None
         newTranslation = new[lang] if lang in new else None
 
         if oldTranslation != newTranslation:
-            result[lang] = newTranslation
+
+            if oldTranslation is None:
+                result.append((lang, newTranslation, Diff.ADDED))
+            elif newTranslation is None:
+                result.append((lang, newTranslation, Diff.DELETED))
+            else:
+                result.append((lang, newTranslation, Diff.UPDATED))
 
     return result
 
 def updateTranslation(key, updatedTranslation, dictionary, allLanguages):
-    oldValues = dictionary[key]
+    oldValues = translationFromDictionary(key, dictionary)
     newValues = ast.literal_eval(updatedTranslation)
     diff = getDiff(oldValues, newValues, allLanguages)
 
@@ -132,7 +148,7 @@ def main():
     translations = readTranslations(translationsDirectory)
     dictionary = buildTranslationsDictionary(translations)
 
-    if args.KEY is not None and args.KEY in dictionary:
+    if args.KEY is not None:
         key = args.KEY
         editTranslationForKey(key, dictionary, translations)
 

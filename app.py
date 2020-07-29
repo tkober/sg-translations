@@ -14,12 +14,23 @@ from gupy.view import ListView, Label, HBox, BackgroundView
 KEY_Q=ord('q')
 
 COLOR_PAIR_DEFAULT=0
-COLOR_PAIR_SELECTED=1
+COLOR_PAIR_TITLE=1
 COLOR_PAIR_KEY=2
 COLOR_PAIR_DESCRIPTION=3
-COLOR_PAIR_FILTER=4
+COLOR_PAIR_PATTERN=4
+COLOR_PAIR_SELECTED=5
+COLOR_PAIR_ADDED=6
+COLOR_PAIR_DELETED=7
+COLOR_PAIR_MODIFIED=8
+COLOR_PAIR_MOVED=9
+COLOR_PAIR_UNTRACKED=10
+COLOR_PAIR_STAGED=11
+COLOR_PAIR_CONFIRMATION=12
+COLOR_PAIR_CONFIRMATION_SELECTION=13
 
 BLOCK_LEVEL = 2
+TRANSLATION_DIRECTORY = '/Users/kober/code/java/taloom/just-hire-angular/src/app/commons/provider/translation/resources'
+TRANSLATION_PATTERN = '*.properties.ts'
 
 class Diff(Enum):
     ADDED = 1
@@ -46,7 +57,7 @@ def findNthOccurrenceFromBehind(string, substring, n):
 
     return index
 
-def readTranslations(translationsDirectory, pattern='*.properties.ts', languagTag=lambda filename: filename.split('.')[0], blockLevel=BLOCK_LEVEL):
+def readTranslations(translationsDirectory, pattern=TRANSLATION_PATTERN, languagTag=lambda filename: filename.split('.')[0], blockLevel=BLOCK_LEVEL):
     files = { languagTag(f.name): f for f in Path(translationsDirectory).rglob(pattern) }
     languages = list(files.keys())
 
@@ -218,8 +229,7 @@ def main():
         help='The key that shall be edited or created. If no key is provided all available translations will be listed.')
     args = argparser.parse_args()
 
-    translationsDirectory = '/Users/kober/code/java/taloom/just-hire-angular/src/app/commons/provider/translation/resources';
-    translations = readTranslations(translationsDirectory)
+    translations = readTranslations(TRANSLATION_DIRECTORY)
     dictionary = buildTranslationsDictionary(translations)
 
     if args.KEY is not None:
@@ -229,23 +239,55 @@ def main():
     else:
         curses.wrapper(interactive)
 
-def interactive(stdscr):
-
+def setupColors():
     curses.curs_set(0)
-    curses.init_pair(COLOR_PAIR_SELECTED, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(COLOR_PAIR_TITLE, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(COLOR_PAIR_KEY, curses.COLOR_BLACK, curses.COLOR_CYAN)
     curses.init_pair(COLOR_PAIR_DESCRIPTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
-    curses.init_pair(COLOR_PAIR_FILTER, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
+    curses.init_pair(COLOR_PAIR_PATTERN, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
+    curses.init_pair(COLOR_PAIR_SELECTED, curses.COLOR_BLACK, curses.COLOR_CYAN)
+
+    curses.init_pair(COLOR_PAIR_ADDED, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_PAIR_DELETED, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_PAIR_MODIFIED, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_PAIR_MOVED, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_PAIR_UNTRACKED, curses.COLOR_CYAN, curses.COLOR_BLACK)
+
+    curses.init_pair(COLOR_PAIR_STAGED, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_PAIR_CONFIRMATION, curses.COLOR_WHITE, curses.COLOR_RED)
+    curses.init_pair(COLOR_PAIR_CONFIRMATION_SELECTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
+
+def addTitleBox(screen):
+    title_background = BackgroundView(curses.color_pair(COLOR_PAIR_TITLE))
+    screen.add_view(title_background, lambda w, h, v: (0, 0, w, 1))
+
+    path = Path(TRANSLATION_DIRECTORY)
+    try:
+        relative = path.relative_to(Path.home())
+        title = '~/' + str(relative)
+    except ValueError:
+        pass
+
+    repo_label = Label(title)
+    repo_label.attributes.append(curses.color_pair(COLOR_PAIR_TITLE))
+    repo_label.attributes.append(curses.A_BOLD)
+
+    pattern_label = Label('['+TRANSLATION_PATTERN+']')
+    pattern_label.attributes.append(curses.color_pair(COLOR_PAIR_PATTERN))
+    pattern_label.attributes.append(curses.A_BOLD)
+
+    title_hbox = HBox()
+    title_hbox.add_view(repo_label, Padding(0, 0, 0, 0))
+    title_hbox.add_view(pattern_label, Padding(1, 0, 0, 0))
+    screen.add_view(title_hbox,
+                    lambda w, h, v: ((w - v.required_size().width) // 2, 0, title_hbox.required_size().width + 1, 1))
+
+def interactive(stdscr):
+
+    setupColors()
 
     screen = ConstrainedBasedScreen(stdscr)
-
-    wip_label = Label("   Not yet implemented   ")
-    wip_label.attributes.append(curses.color_pair(COLOR_PAIR_FILTER))
-    wip_label.attributes.append(curses.A_BOLD)
-
-    wip_hbox = HBox()
-    wip_hbox.add_view(wip_label, Padding(0, 0, 0, 0))
-    screen.add_view(wip_hbox, lambda w, h, v: ((w - v.required_size().width) // 2, h//2, wip_hbox.required_size().width + 1, 1))
+    addTitleBox(screen)
 
     while 1:
         screen.render()

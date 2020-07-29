@@ -8,13 +8,14 @@ import curses
 
 class UI:
 
-    def __init__(self, translationDirectory, translationPattern):
-        self.translationDirectory = translationDirectory
-        self.translationPattern = translationPattern
+    def __init__(self):
+        self.isFiltering = False
+        self.filter = ''
+        self.filterCriteria = 'KEY'
 
     def setupColors(self):
         curses.curs_set(0)
-        curses.init_pair(colorpairs.TITLE, curses.COLOR_BLACK, curses.COLOR_WHITE)
+
         curses.init_pair(colorpairs.KEY, curses.COLOR_BLACK, curses.COLOR_CYAN)
         curses.init_pair(colorpairs.DESCRIPTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
         curses.init_pair(colorpairs.PATTERN, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
@@ -30,30 +31,9 @@ class UI:
         curses.init_pair(colorpairs.CONFIRMATION, curses.COLOR_WHITE, curses.COLOR_RED)
         curses.init_pair(colorpairs.CONFIRMATION_SELECTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
-    def addTitleBox(self, screen):
-        title_background = BackgroundView(curses.color_pair(colorpairs.TITLE))
-        screen.add_view(title_background, lambda w, h, v: (0, 0, w, 1))
-
-        path = Path(self.translationDirectory)
-        try:
-            relative = path.relative_to(Path.home())
-            title = '~/' + str(relative)
-        except ValueError:
-            pass
-
-        repoLabel = Label(title)
-        repoLabel.attributes.append(curses.color_pair(colorpairs.TITLE))
-        repoLabel.attributes.append(curses.A_BOLD)
-
-        patternLabel = Label('['+self.translationPattern+']')
-        patternLabel.attributes.append(curses.color_pair(colorpairs.PATTERN))
-        patternLabel.attributes.append(curses.A_BOLD)
-
-        titleHBox = HBox()
-        titleHBox.add_view(repoLabel, Padding(0, 0, 0, 0))
-        titleHBox.add_view(patternLabel, Padding(1, 0, 0, 0))
-        screen.add_view(titleHBox,
-                        lambda w, h, v: ((w - v.required_size().width) // 2, 0, titleHBox.required_size().width + 1, 1))
+        curses.init_pair(colorpairs.FILTER_CRITERIA, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+        curses.init_pair(colorpairs.FILTER_CRITERIA_EDITING, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
+        curses.init_pair(colorpairs.FILTER_VALUE, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
     def addLegend(self, screen, legendItems):
 
@@ -76,40 +56,88 @@ class UI:
         screen.add_view(legendHBox, lambda w, h, v: (0, h-1, w-moreLabel.required_size().width, 1))
         screen.add_view(moreLabel, lambda w, h, v: (w-v.required_size().width-1, h-1, v.required_size().width, 1))
 
-        return [legendHBox, moreLabel]
+        return (legendHBox, moreLabel)
 
+    def addFilterBox(self, screen):
 
+        filterBackground = BackgroundView(curses.color_pair(colorpairs.FILTER_VALUE))
+        screen.add_view(filterBackground, lambda w, h, v: (0, 0, w, 1))
+
+        filterCriteriaLabel = Label('[KEY]=')
+        filterCriteriaLabel.attributes.append(curses.color_pair(colorpairs.FILTER_CRITERIA))
+        filterCriteriaLabel.attributes.append(curses.A_BOLD)
+
+        filterLabel = Label('foobar')
+        filterLabel.attributes.append(curses.color_pair(colorpairs.FILTER_VALUE))
+
+        filterHBox = HBox();
+        filterHBox.add_view(filterCriteriaLabel, Padding(0, 0, 0, 0))
+        filterHBox.add_view(filterLabel, Padding(0, 0, 0, 0))
+
+        screen.add_view(filterHBox, lambda w, h, v: (0, 0, w, 1))
+
+        return (filterBackground, filterHBox, filterCriteriaLabel, filterLabel)
+
+    def updateFilterBox(self, filterElements):
+        _, _, filterCriteriaLabel, filterLabel = filterElements
+
+        filterLabel.text = self.filter
+
+        filterCriteria = self.filterCriteria + '='
+        if len(self.filter) > 0:
+            filterCriteriaLabel.text = filterCriteria
+        else:
+            filterCriteriaLabel.text = filterCriteria if self.isFiltering else ''
+
+        filterCriteriaLabel.attributes.clear()
+        filterCriteriaLabel.attributes.append(curses.A_BOLD)
+        color = curses.color_pair(colorpairs.FILTER_CRITERIA_EDITING) if self.isFiltering else curses.color_pair(colorpairs.FILTER_CRITERIA)
+        filterCriteriaLabel.attributes.append(color)
 
     def loop(self, stdscr):
 
         self.setupColors()
 
         screen = ConstrainedBasedScreen(stdscr)
-        self.addTitleBox(screen)
         legendElements = self.addLegend(screen, legends.MAIN)
-
-        isFiltering = False
+        filterElements = self.addFilterBox(screen)
 
         while 1:
+            self.updateFilterBox(filterElements)
+
             screen.render()
+
             key = stdscr.getch()
-
-            if isFiltering:
+            if self.isFiltering:
                 if key == keys.ESCAPE:
-                    isFiltering = False
-                    screen.remove_views(legendElements)
+                    self.isFiltering = False
+                    screen.remove_views(list(legendElements))
+                    legendElements = self.addLegend(screen, legends.MAIN)
+                    self.filter = ''
+
+                elif key == keys.ENTER:
+                    self.isFiltering = False
+                    screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.MAIN)
 
-                if key == keys.ENTER:
-                    isFiltering = False
-                    screen.remove_views(legendElements)
-                    legendElements = self.addLegend(screen, legends.MAIN)
+                elif key == keys.BACKSPACE:
+                    self.filter = self.filter[:-1]
+
+                elif key in [keys.LEFT, keys.RIGHT]:
+                    pass
+
+                else:
+                    character = chr(key)
+                    self.filter = self.filter + character
 
             else:
                 if key == keys.F:
-                    isFiltering = True
-                    screen.remove_views(legendElements)
+                    self.isFiltering = True
+                    screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.FILTER)
+
+                if key == keys.C:
+                    self.filter = ''
 
                 if key == keys.Q:
                     exit(0)

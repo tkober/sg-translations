@@ -10,8 +10,7 @@ import curses
 from gupy.geometry import Padding
 from gupy.screen import ConstrainedBasedScreen
 from gupy.view import ListView, Label, HBox, BackgroundView
-
-KEY_Q=ord('q')
+import keys
 
 COLOR_PAIR_DEFAULT=0
 COLOR_PAIR_TITLE=1
@@ -32,11 +31,26 @@ BLOCK_LEVEL = 2
 TRANSLATION_DIRECTORY = '/Users/kober/code/java/taloom/just-hire-angular/src/app/commons/provider/translation/resources'
 TRANSLATION_PATTERN = '*.properties.ts'
 
+MAIN_LEGEND=[
+    ('[ENTER]', ' Edit Translation '),
+    ('[UP]', ' Scroll up '),
+    ('[DOWN]', ' Scroll down '),
+    ('[F]', ' Filter '),
+    ('[C]', ' Clear Filter '),
+    ('[Q]', ' Quit ')
+]
+
+FILTER_LEGEND=[
+    ('[ENTER]', ' Quit and save Filter '),
+    ('[UP|DOWN]', ' Change Filter Criteria '),
+    ('[ESC]', ' Quit and clear Filter ')
+]
+
+
 class Diff(Enum):
     ADDED = 1
     UPDATED = 2
     DELETED = 3
-
 
 def findNthOccurrence(string, substring, n):
     parts= string.split(substring, n)
@@ -268,19 +282,44 @@ def addTitleBox(screen):
     except ValueError:
         pass
 
-    repo_label = Label(title)
-    repo_label.attributes.append(curses.color_pair(COLOR_PAIR_TITLE))
-    repo_label.attributes.append(curses.A_BOLD)
+    repoLabel = Label(title)
+    repoLabel.attributes.append(curses.color_pair(COLOR_PAIR_TITLE))
+    repoLabel.attributes.append(curses.A_BOLD)
 
-    pattern_label = Label('['+TRANSLATION_PATTERN+']')
-    pattern_label.attributes.append(curses.color_pair(COLOR_PAIR_PATTERN))
-    pattern_label.attributes.append(curses.A_BOLD)
+    patternLabel = Label('['+TRANSLATION_PATTERN+']')
+    patternLabel.attributes.append(curses.color_pair(COLOR_PAIR_PATTERN))
+    patternLabel.attributes.append(curses.A_BOLD)
 
-    title_hbox = HBox()
-    title_hbox.add_view(repo_label, Padding(0, 0, 0, 0))
-    title_hbox.add_view(pattern_label, Padding(1, 0, 0, 0))
-    screen.add_view(title_hbox,
-                    lambda w, h, v: ((w - v.required_size().width) // 2, 0, title_hbox.required_size().width + 1, 1))
+    titleHBox = HBox()
+    titleHBox.add_view(repoLabel, Padding(0, 0, 0, 0))
+    titleHBox.add_view(patternLabel, Padding(1, 0, 0, 0))
+    screen.add_view(titleHBox,
+                    lambda w, h, v: ((w - v.required_size().width) // 2, 0, titleHBox.required_size().width + 1, 1))
+
+def addLegend(screen, legendItems):
+
+    moreLabel = Label('')
+    def setMoreLabel(clipped):
+        moreLabel.text = '...' if clipped else ''
+
+    legendHBox = HBox()
+    legendHBox.clipping_callback = setMoreLabel
+
+    for key, description in legendItems:
+        keyLabel = Label(key)
+        keyLabel.attributes.append(curses.color_pair(COLOR_PAIR_KEY))
+        legendHBox.add_view(keyLabel, Padding(2, 0, 0, 0))
+
+        descriptionLabel = Label(description)
+        descriptionLabel.attributes.append(curses.color_pair(COLOR_PAIR_DESCRIPTION))
+        legendHBox.add_view(descriptionLabel, Padding(0, 0, 0, 0))
+
+    screen.add_view(legendHBox, lambda w, h, v: (0, h-1, w-moreLabel.required_size().width, 1))
+    screen.add_view(moreLabel, lambda w, h, v: (w-v.required_size().width-1, h-1, v.required_size().width, 1))
+
+    return [legendHBox, moreLabel]
+
+
 
 def interactive(stdscr):
 
@@ -288,13 +327,36 @@ def interactive(stdscr):
 
     screen = ConstrainedBasedScreen(stdscr)
     addTitleBox(screen)
+    legendElements = addLegend(screen, MAIN_LEGEND)
+
+    isFiltering = False
 
     while 1:
         screen.render()
         key = stdscr.getch()
 
-        if key == KEY_Q:
-            exit(0)
+        if isFiltering:
+
+            if key == keys.ESCAPE:
+                isFiltering = False
+                screen.remove_views(legendElements)
+                legendElements = addLegend(screen, MAIN_LEGEND)
+
+            if key == keys.ENTER:
+                isFiltering = False
+                screen.remove_views(legendElements)
+                legendElements = addLegend(screen, MAIN_LEGEND)
+
+
+        else:
+
+            if key == keys.F:
+                isFiltering = True
+                screen.remove_views(legendElements)
+                legendElements = addLegend(screen, FILTER_LEGEND)
+
+            if key == keys.Q:
+                exit(0)
 
 
 if __name__ == '__main__':

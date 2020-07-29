@@ -217,7 +217,7 @@ def main():
         editTranslationForKey(key, dictionary, translations)
 
     else:
-        ui = UI()
+        ui = UI(['KEY', 'TRANSLATION'])
         curses.wrapper(ui.loop)
 
 

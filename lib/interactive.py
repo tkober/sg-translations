@@ -8,10 +8,11 @@ import curses
 
 class UI:
 
-    def __init__(self):
+    def __init__(self, filterCriteria):
         self.isFiltering = False
         self.filter = ''
-        self.filterCriteria = 'KEY'
+        self.filterCriteria = filterCriteria
+        self.activeFilterCriteria = filterCriteria[0]
 
     def setupColors(self):
         curses.curs_set(0)
@@ -83,7 +84,7 @@ class UI:
 
         filterLabel.text = self.filter
 
-        filterCriteria = self.filterCriteria + '='
+        filterCriteria = self.activeFilterCriteria + '='
         if len(self.filter) > 0:
             filterCriteriaLabel.text = filterCriteria
         else:
@@ -93,6 +94,20 @@ class UI:
         filterCriteriaLabel.attributes.append(curses.A_BOLD)
         color = curses.color_pair(colorpairs.FILTER_CRITERIA_EDITING) if self.isFiltering else curses.color_pair(colorpairs.FILTER_CRITERIA)
         filterCriteriaLabel.attributes.append(color)
+
+    def selectPreviousFilterCriteria(self):
+        index = self.filterCriteria.index(self.activeFilterCriteria)
+        index = index-1
+        if index < 0:
+            index = len(self.filterCriteria)-1
+        self.activeFilterCriteria = self.filterCriteria[index]
+
+    def selectNextFilterCriteria(self):
+        index = self.filterCriteria.index(self.activeFilterCriteria)
+        index = index+1
+        if index >= len(self.filterCriteria):
+            index = 0
+        self.activeFilterCriteria = self.filterCriteria[index]
 
     def loop(self, stdscr):
 
@@ -122,6 +137,12 @@ class UI:
 
                 elif key == keys.BACKSPACE:
                     self.filter = self.filter[:-1]
+
+                elif key == keys.UP:
+                    self.selectPreviousFilterCriteria()
+
+                elif key == keys.DOWN:
+                    self.selectNextFilterCriteria()
 
                 elif key in [keys.LEFT, keys.RIGHT]:
                     pass

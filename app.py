@@ -12,21 +12,7 @@ from gupy.screen import ConstrainedBasedScreen
 from gupy.view import ListView, Label, HBox, BackgroundView
 import keys
 import legends
-
-COLOR_PAIR_DEFAULT=0
-COLOR_PAIR_TITLE=1
-COLOR_PAIR_KEY=2
-COLOR_PAIR_DESCRIPTION=3
-COLOR_PAIR_PATTERN=4
-COLOR_PAIR_SELECTED=5
-COLOR_PAIR_ADDED=6
-COLOR_PAIR_DELETED=7
-COLOR_PAIR_MODIFIED=8
-COLOR_PAIR_MOVED=9
-COLOR_PAIR_UNTRACKED=10
-COLOR_PAIR_STAGED=11
-COLOR_PAIR_CONFIRMATION=12
-COLOR_PAIR_CONFIRMATION_SELECTION=13
+import colorpairs
 
 BLOCK_LEVEL = 2
 TRANSLATION_DIRECTORY = '/Users/kober/code/java/taloom/just-hire-angular/src/app/commons/provider/translation/resources'
@@ -240,24 +226,24 @@ def main():
 
 def setupColors():
     curses.curs_set(0)
-    curses.init_pair(COLOR_PAIR_TITLE, curses.COLOR_BLACK, curses.COLOR_WHITE)
-    curses.init_pair(COLOR_PAIR_KEY, curses.COLOR_BLACK, curses.COLOR_CYAN)
-    curses.init_pair(COLOR_PAIR_DESCRIPTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
-    curses.init_pair(COLOR_PAIR_PATTERN, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
-    curses.init_pair(COLOR_PAIR_SELECTED, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(colorpairs.TITLE, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair(colorpairs.KEY, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(colorpairs.DESCRIPTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair(colorpairs.PATTERN, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
+    curses.init_pair(colorpairs.SELECTED, curses.COLOR_BLACK, curses.COLOR_CYAN)
 
-    curses.init_pair(COLOR_PAIR_ADDED, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    curses.init_pair(COLOR_PAIR_DELETED, curses.COLOR_RED, curses.COLOR_BLACK)
-    curses.init_pair(COLOR_PAIR_MODIFIED, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-    curses.init_pair(COLOR_PAIR_MOVED, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
-    curses.init_pair(COLOR_PAIR_UNTRACKED, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(colorpairs.ADDED, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(colorpairs.DELETED, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(colorpairs.MODIFIED, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(colorpairs.MOVED, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+    curses.init_pair(colorpairs.UNTRACKED, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
-    curses.init_pair(COLOR_PAIR_STAGED, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    curses.init_pair(COLOR_PAIR_CONFIRMATION, curses.COLOR_WHITE, curses.COLOR_RED)
-    curses.init_pair(COLOR_PAIR_CONFIRMATION_SELECTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair(colorpairs.STAGED, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(colorpairs.CONFIRMATION, curses.COLOR_WHITE, curses.COLOR_RED)
+    curses.init_pair(colorpairs.CONFIRMATION_SELECTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
 def addTitleBox(screen):
-    title_background = BackgroundView(curses.color_pair(COLOR_PAIR_TITLE))
+    title_background = BackgroundView(curses.color_pair(colorpairs.TITLE))
     screen.add_view(title_background, lambda w, h, v: (0, 0, w, 1))
 
     path = Path(TRANSLATION_DIRECTORY)
@@ -268,11 +254,11 @@ def addTitleBox(screen):
         pass
 
     repoLabel = Label(title)
-    repoLabel.attributes.append(curses.color_pair(COLOR_PAIR_TITLE))
+    repoLabel.attributes.append(curses.color_pair(colorpairs.TITLE))
     repoLabel.attributes.append(curses.A_BOLD)
 
     patternLabel = Label('['+TRANSLATION_PATTERN+']')
-    patternLabel.attributes.append(curses.color_pair(COLOR_PAIR_PATTERN))
+    patternLabel.attributes.append(curses.color_pair(colorpairs.PATTERN))
     patternLabel.attributes.append(curses.A_BOLD)
 
     titleHBox = HBox()
@@ -292,11 +278,11 @@ def addLegend(screen, legendItems):
 
     for key, description in legendItems:
         keyLabel = Label(key)
-        keyLabel.attributes.append(curses.color_pair(COLOR_PAIR_KEY))
+        keyLabel.attributes.append(curses.color_pair(colorpairs.KEY))
         legendHBox.add_view(keyLabel, Padding(2, 0, 0, 0))
 
         descriptionLabel = Label(description)
-        descriptionLabel.attributes.append(curses.color_pair(COLOR_PAIR_DESCRIPTION))
+        descriptionLabel.attributes.append(curses.color_pair(colorpairs.DESCRIPTION))
         legendHBox.add_view(descriptionLabel, Padding(0, 0, 0, 0))
 
     screen.add_view(legendHBox, lambda w, h, v: (0, h-1, w-moreLabel.required_size().width, 1))

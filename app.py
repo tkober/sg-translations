@@ -9,10 +9,8 @@ import re
 import curses
 from gupy.geometry import Padding
 from gupy.screen import ConstrainedBasedScreen
-from gupy.view import ListView, Label, HBox, BackgroundView
-import keys
-import legends
-import colorpairs
+from gupy.view import Label, HBox, BackgroundView
+from lib import colorpairs, keys, legends
 
 BLOCK_LEVEL = 2
 TRANSLATION_DIRECTORY = '/Users/kober/code/java/taloom/just-hire-angular/src/app/commons/provider/translation/resources'

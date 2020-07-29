@@ -11,6 +11,7 @@ from gupy.geometry import Padding
 from gupy.screen import ConstrainedBasedScreen
 from gupy.view import ListView, Label, HBox, BackgroundView
 import keys
+import legends
 
 COLOR_PAIR_DEFAULT=0
 COLOR_PAIR_TITLE=1
@@ -30,22 +31,6 @@ COLOR_PAIR_CONFIRMATION_SELECTION=13
 BLOCK_LEVEL = 2
 TRANSLATION_DIRECTORY = '/Users/kober/code/java/taloom/just-hire-angular/src/app/commons/provider/translation/resources'
 TRANSLATION_PATTERN = '*.properties.ts'
-
-MAIN_LEGEND=[
-    ('[ENTER]', ' Edit Translation '),
-    ('[UP]', ' Scroll up '),
-    ('[DOWN]', ' Scroll down '),
-    ('[F]', ' Filter '),
-    ('[C]', ' Clear Filter '),
-    ('[Q]', ' Quit ')
-]
-
-FILTER_LEGEND=[
-    ('[ENTER]', ' Quit and save Filter '),
-    ('[UP|DOWN]', ' Change Filter Criteria '),
-    ('[ESC]', ' Quit and clear Filter ')
-]
-
 
 class Diff(Enum):
     ADDED = 1
@@ -327,7 +312,7 @@ def interactive(stdscr):
 
     screen = ConstrainedBasedScreen(stdscr)
     addTitleBox(screen)
-    legendElements = addLegend(screen, MAIN_LEGEND)
+    legendElements = addLegend(screen, legends.MAIN)
 
     isFiltering = False
 
@@ -336,24 +321,21 @@ def interactive(stdscr):
         key = stdscr.getch()
 
         if isFiltering:
-
             if key == keys.ESCAPE:
                 isFiltering = False
                 screen.remove_views(legendElements)
-                legendElements = addLegend(screen, MAIN_LEGEND)
+                legendElements = addLegend(screen, legends.MAIN)
 
             if key == keys.ENTER:
                 isFiltering = False
                 screen.remove_views(legendElements)
-                legendElements = addLegend(screen, MAIN_LEGEND)
-
+                legendElements = addLegend(screen, legends.MAIN)
 
         else:
-
             if key == keys.F:
                 isFiltering = True
                 screen.remove_views(legendElements)
-                legendElements = addLegend(screen, FILTER_LEGEND)
+                legendElements = addLegend(screen, legends.FILTER)
 
             if key == keys.Q:
                 exit(0)

@@ -32,7 +32,7 @@ After installation _sg-translations_ is available in your bash using the followi
 
 If no path is provided the current directory will be used.
 
-### man
+### -h
 ```
 usage: translations [-h] [KEY]
 

@@ -6,6 +6,12 @@ This tool saves you from touching these messy translation files in just-hire-ang
 
 In order do install or run this tool make sure either PIP or Anaconda is installed and available on your bash.
 
+## Cloning
+
+This repo contains git submodules. Remember to initialize these by running
+
+`git submodule init`
+
 
 ## Install
 

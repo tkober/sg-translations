@@ -1,18 +1,15 @@
 from gupy.geometry import Padding
-from gupy.view import BackgroundView, Label, HBox, ListView
+from gupy.view import BackgroundView, Label, HBox, ListView, ListViewDelegate, View
 from gupy.screen import ConstrainedBasedScreen
 from lib import colorpairs, keys, legends
 from pathlib import Path
 import curses
 
 
-class UI:
+class UI(ListViewDelegate):
 
-    def __init__(self, filterCriteria):
-        self.isFiltering = False
-        self.filter = ''
-        self.filterCriteria = filterCriteria
-        self.activeFilterCriteria = filterCriteria[0]
+    def __init__(self, app):
+        self.app = app
 
     def setupColors(self):
         curses.curs_set(0)
@@ -64,11 +61,11 @@ class UI:
         filterBackground = BackgroundView(curses.color_pair(colorpairs.FILTER_VALUE))
         screen.add_view(filterBackground, lambda w, h, v: (0, 0, w, 1))
 
-        filterCriteriaLabel = Label('[KEY]=')
+        filterCriteriaLabel = Label('sss')
         filterCriteriaLabel.attributes.append(curses.color_pair(colorpairs.FILTER_CRITERIA))
         filterCriteriaLabel.attributes.append(curses.A_BOLD)
 
-        filterLabel = Label('foobar')
+        filterLabel = Label('...')
         filterLabel.attributes.append(curses.color_pair(colorpairs.FILTER_VALUE))
 
         filterHBox = HBox();
@@ -82,32 +79,35 @@ class UI:
     def updateFilterBox(self, filterElements):
         _, _, filterCriteriaLabel, filterLabel = filterElements
 
-        filterLabel.text = self.filter
+        filterLabel.text = self.app.filter
 
-        filterCriteria = self.activeFilterCriteria + '='
-        if len(self.filter) > 0:
+        filterCriteria = self.app.activeFilterCriteria + '='
+        if len(self.app.filter) > 0:
             filterCriteriaLabel.text = filterCriteria
         else:
-            filterCriteriaLabel.text = filterCriteria if self.isFiltering else ''
+            filterCriteriaLabel.text = filterCriteria if self.app.isFiltering else ''
 
         filterCriteriaLabel.attributes.clear()
         filterCriteriaLabel.attributes.append(curses.A_BOLD)
-        color = curses.color_pair(colorpairs.FILTER_CRITERIA_EDITING) if self.isFiltering else curses.color_pair(colorpairs.FILTER_CRITERIA)
+        color = curses.color_pair(colorpairs.FILTER_CRITERIA_EDITING) if self.app.isFiltering else curses.color_pair(colorpairs.FILTER_CRITERIA)
         filterCriteriaLabel.attributes.append(color)
 
     def selectPreviousFilterCriteria(self):
-        index = self.filterCriteria.index(self.activeFilterCriteria)
+        index = self.app.filterCriteria.index(self.app.activeFilterCriteria)
         index = index-1
         if index < 0:
-            index = len(self.filterCriteria)-1
-        self.activeFilterCriteria = self.filterCriteria[index]
+            index = len(self.app.filterCriteria)-1
+        self.activeFilterCriteria = self.app.filterCriteria[index]
 
     def selectNextFilterCriteria(self):
-        index = self.filterCriteria.index(self.activeFilterCriteria)
+        index = self.app.filterCriteria.index(self.app.activeFilterCriteria)
         index = index+1
-        if index >= len(self.filterCriteria):
+        if index >= len(self.app.filterCriteria):
             index = 0
-        self.activeFilterCriteria = self.filterCriteria[index]
+        self.activeFilterCriteria = self.app.filterCriteria[index]
+
+    def build_row(self, i, data, is_selected, width) -> View:
+        pass
 
     def loop(self, stdscr):
 
@@ -123,20 +123,20 @@ class UI:
             screen.render()
 
             key = stdscr.getch()
-            if self.isFiltering:
+            if self.app.isFiltering:
                 if key == keys.ESCAPE:
-                    self.isFiltering = False
+                    self.app.isFiltering = False
                     screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.MAIN)
-                    self.filter = ''
+                    self.app.filter = ''
 
                 elif key == keys.ENTER:
-                    self.isFiltering = False
+                    self.app.isFiltering = False
                     screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.MAIN)
 
                 elif key == keys.BACKSPACE:
-                    self.filter = self.filter[:-1]
+                    self.app.filter = self.app.filter[:-1]
 
                 elif key == keys.UP:
                     self.selectPreviousFilterCriteria()
@@ -149,16 +149,16 @@ class UI:
 
                 else:
                     character = chr(key)
-                    self.filter = self.filter + character
+                    self.app.filter = self.app.filter + character
 
             else:
                 if key == keys.F:
-                    self.isFiltering = True
+                    self.app.isFiltering = True
                     screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.FILTER)
 
                 if key == keys.C:
-                    self.filter = ''
+                    self.app.filter = ''
 
                 if key == keys.Q:
                     exit(0)

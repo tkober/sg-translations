@@ -8,6 +8,7 @@ import ast
 import re
 import curses
 from lib.interactive import UI
+from gupy.view import ListViewDataSource
 
 BLOCK_LEVEL = 2
 TRANSLATION_DIRECTORY = '/Users/kober/code/java/taloom/just-hire-angular/src/app/commons/provider/translation/resources'
@@ -18,7 +19,7 @@ class Diff(Enum):
     UPDATED = 2
     DELETED = 3
 
-class App:
+class App(ListViewDataSource):
 
     def findNthOccurrence(self, string, substring, n):
         parts= string.split(substring, n)
@@ -202,6 +203,11 @@ class App:
             self.updateTranslation(key, content, dictionary, allLanguages, translations)
 
     def __init__(self):
+        self.isFiltering = False
+        self.filter = ''
+        self.filterCriteria = ['KEY', 'TRANSLATION']
+        self.activeFilterCriteria = self.filterCriteria[0]
+
         argparser = argparse.ArgumentParser(
             prog='translations',
             description='Saves you from touching these messy translation files in just-hire-angular.'
@@ -213,15 +219,22 @@ class App:
 
         self.translations = self.readTranslations(TRANSLATION_DIRECTORY)
         self.dictionary = self.buildTranslationsDictionary(self.translations)
+        self.allKeysSorted = list(self.dictionary.keys())
+        self.allKeysSorted.sort()
 
         if args.KEY is not None:
             key = args.KEY
             self.editTranslationForKey(key, self.dictionary, self.translations)
 
         else:
-            ui = UI(['KEY', 'TRANSLATION'])
+            ui = UI(self)
             curses.wrapper(ui.loop)
 
+    def number_of_rows(self) -> int:
+        return len(self.allKeysSorted)
+
+    def get_data(self, i) -> object:
+        return self.allKeysSorted[i]
 
 if __name__ == '__main__':
-    App()
+    app = App()

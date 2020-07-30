@@ -79,7 +79,7 @@ class App(ListViewDataSource):
     def translationFromDictionary(self, key, dictionary):
         return dictionary[key] if key in dictionary else {}
 
-    def buildEditorContent(self, entry, allLanguages):
+    def buildEditorContent(self, key, entry, allLanguages):
         completeEntry = {}
         for lang in allLanguages:
             translation = entry[lang] if lang in entry else None
@@ -87,13 +87,13 @@ class App(ListViewDataSource):
 
         items = ['\t{}: {}'.format(key.__repr__(), value.__repr__()) for key, value in completeEntry.items()]
         itemsFormatted = ',\n'.join(items)
-        result = '{\n' + itemsFormatted + '\n}'
+        result = '# ' + key + '\n{\n' + itemsFormatted + '\n}'
 
         return result
 
     def openEditor(self, key, dictionary, allLanguages):
         entry = self.translationFromDictionary(key, dictionary)
-        editorContent = self.buildEditorContent(entry, allLanguages)
+        editorContent = self.buildEditorContent(key, entry, allLanguages)
 
         EDITOR = os.environ.get('EDITOR', 'vim')
         with tempfile.NamedTemporaryFile(suffix='.tmp', mode='w+') as tf:

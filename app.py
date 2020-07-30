@@ -18,208 +18,211 @@ class Diff(Enum):
     UPDATED = 2
     DELETED = 3
 
-def findNthOccurrence(string, substring, n):
-    parts= string.split(substring, n)
-    if len(parts)<=n:
-        return -1
-    return len(string)-len(parts[-1])-len(substring)
+class App:
+
+    def findNthOccurrence(self, string, substring, n):
+        parts= string.split(substring, n)
+        if len(parts)<=n:
+            return -1
+        return len(string)-len(parts[-1])-len(substring)
 
 
-def findNthOccurrenceFromBehind(string, substring, n):
-    end = len(string)
+    def findNthOccurrenceFromBehind(self, string, substring, n):
+        end = len(string)
 
-    while n > 0:
-        index = string.rfind(substring, 0, end)
-        n = n-1
-        end = index
-        if index == -1:
-            break
+        while n > 0:
+            index = string.rfind(substring, 0, end)
+            n = n-1
+            end = index
+            if index == -1:
+                break
 
-    return index
+        return index
 
-def readTranslations(translationsDirectory, pattern=TRANSLATION_PATTERN, languagTag=lambda filename: filename.split('.')[0], blockLevel=BLOCK_LEVEL):
-    files = { languagTag(f.name): f for f in Path(translationsDirectory).rglob(pattern) }
-    languages = list(files.keys())
+    def readTranslations(self, translationsDirectory, pattern=TRANSLATION_PATTERN, languagTag=lambda filename: filename.split('.')[0], blockLevel=BLOCK_LEVEL):
+        files = { languagTag(f.name): f for f in Path(translationsDirectory).rglob(pattern) }
+        languages = list(files.keys())
 
-    result = {}
+        result = {}
 
-    for language in languages:
-        file = open(files[language], 'r')
+        for language in languages:
+            file = open(files[language], 'r')
+            content = file.read()
+            file.close()
+
+            begin = self.findNthOccurrence(content, '{', blockLevel)
+            end = self.findNthOccurrenceFromBehind(content, '}', blockLevel) + 1;
+
+            functionContent = content[begin:end]
+            functionContent = 'getJson = function() {}; console.log(JSON.stringify(getJson()));'.format(functionContent)
+
+            p = run(['node'], stdout=PIPE, input=functionContent.encode('utf-8'))
+            jsonString = p.stdout.decode('utf-8')
+            translationJson = json.loads(jsonString)
+
+            result[language] = (files[language], translationJson)
+
+        return result
+
+    def buildTranslationsDictionary(self, translations):
+        result = {}
+        for locale, (_, jsonObject) in translations.items():
+            for key in jsonObject.keys():
+                if key in result:
+                    result[key][locale] = jsonObject[key]
+                else:
+                    result[key] = { locale: jsonObject[key] }
+
+        return result
+
+    def translationFromDictionary(self, key, dictionary):
+        return dictionary[key] if key in dictionary else {}
+
+    def buildEditorContent(self, entry, allLanguages):
+        completeEntry = {}
+        for lang in allLanguages:
+            translation = entry[lang] if lang in entry else None
+            completeEntry[lang] = translation
+
+        items = ['\t{}: {}'.format(key.__repr__(), value.__repr__()) for key, value in completeEntry.items()]
+        itemsFormatted = ',\n'.join(items)
+        result = '{\n' + itemsFormatted + '\n}'
+
+        return result
+
+    def openEditor(self, key, dictionary, allLanguages):
+        entry = self.translationFromDictionary(key, dictionary)
+        editorContent = self.buildEditorContent(entry, allLanguages)
+
+        EDITOR = os.environ.get('EDITOR', 'vim')
+        with tempfile.NamedTemporaryFile(suffix='.tmp', mode='w+') as tf:
+            tf.write(editorContent)
+            tf.flush()
+            call([EDITOR, '+set backupcopy=yes', tf.name])
+
+            tf.seek(0)
+            updatedContent = tf.read()
+            updatedContent = updatedContent.strip()
+            changed = updatedContent != editorContent
+
+            return (changed, updatedContent)
+
+
+    def getDiff(self, old, new, allLanguages):
+        result = []
+
+        for lang in allLanguages:
+            oldTranslation = old[lang] if lang in old else None
+            newTranslation = new[lang] if lang in new else None
+
+            if oldTranslation != newTranslation:
+
+                if oldTranslation is None:
+                    result.append((lang, newTranslation, oldTranslation, Diff.ADDED))
+                elif newTranslation is None:
+                    result.append((lang, newTranslation, oldTranslation, Diff.DELETED))
+                else:
+                    result.append((lang, newTranslation, oldTranslation, Diff.UPDATED))
+
+        return result
+
+    def applyDiff(self, key, diff, translations):
+        for lang, newValue, oldValue, diffType in diff:
+            file, _ = translations[lang]
+
+            if Diff.ADDED == diffType:
+                self.addTranslation(key, newValue, file)
+
+            elif Diff.UPDATED == diffType:
+                self.changeTranslationLine(file, key, newValue, oldValue)
+
+            elif Diff.DELETED == diffType:
+                self.changeTranslationLine(file, key, None, oldValue)
+
+    def buildTranslationLine(self, key, value, blockLevel, indentation='    '):
+        return '\n{}{}: {},'.format(indentation*blockLevel, key.__repr__(), value.__repr__())
+
+    def buildUpdatePattern(self, key, value):
+        KEY = key.__repr__()
+        VALUE = value.__repr__()
+        regex = r"\s*" + re.escape(KEY) + r"\s*[:]\s*" + re.escape(VALUE) + r"\s*,?\s*\n"
+
+        return regex
+
+
+    def changeTranslationLine(self, filePath, key, newValue, oldValue):
+        line = ''
+        if newValue is not None:
+            blockLevel = BLOCK_LEVEL + 1
+            line = self.buildTranslationLine(key, newValue, blockLevel)
+        line = line + '\n'
+
+        updatePattern = self.buildUpdatePattern(key, oldValue)
+
+        file = open(filePath, 'r')
         content = file.read()
         file.close()
 
-        begin = findNthOccurrence(content, '{', blockLevel)
-        end = findNthOccurrenceFromBehind(content, '}', blockLevel) + 1;
+        content = re.sub(updatePattern, line, content)
+        file = open(filePath, 'w')
+        file.write(content)
+        file.close()
 
-        functionContent = content[begin:end]
-        functionContent = 'getJson = function() {}; console.log(JSON.stringify(getJson()));'.format(functionContent)
+    def addTranslation(self, key, value, filePath):
+        blockLevel = BLOCK_LEVEL+1
+        line = self.buildTranslationLine(key, value, blockLevel)
 
-        p = run(['node'], stdout=PIPE, input=functionContent.encode('utf-8'))
-        jsonString = p.stdout.decode('utf-8')
-        translationJson = json.loads(jsonString)
+        file = open(filePath, 'r')
+        content = file.read()
+        file.close()
 
-        result[language] = (files[language], translationJson)
+        index = self.findNthOccurrence(content, '{', blockLevel)
+        index = index+1
+        content = content[:index] + line + content[index:]
 
-    return result
-
-def buildTranslationsDictionary(translations):
-    result = {}
-    for locale, (_, jsonObject) in translations.items():
-        for key in jsonObject.keys():
-            if key in result:
-                result[key][locale] = jsonObject[key]
-            else:
-                result[key] = { locale: jsonObject[key] }
-
-    return result
-
-def translationFromDictionary(key, dictionary):
-    return dictionary[key] if key in dictionary else {}
-
-def buildEditorContent(entry, allLanguages):
-    completeEntry = {}
-    for lang in allLanguages:
-        translation = entry[lang] if lang in entry else None
-        completeEntry[lang] = translation
-
-    items = ['\t{}: {}'.format(key.__repr__(), value.__repr__()) for key, value in completeEntry.items()]
-    itemsFormatted = ',\n'.join(items)
-    result = '{\n' + itemsFormatted + '\n}'
-
-    return result
-
-def openEditor(key, dictionary, allLanguages):
-    entry = translationFromDictionary(key, dictionary)
-    editorContent = buildEditorContent(entry, allLanguages)
-
-    EDITOR = os.environ.get('EDITOR', 'vim')
-    with tempfile.NamedTemporaryFile(suffix='.tmp', mode='w+') as tf:
-        tf.write(editorContent)
-        tf.flush()
-        call([EDITOR, '+set backupcopy=yes', tf.name])
-
-        tf.seek(0)
-        updatedContent = tf.read()
-        updatedContent = updatedContent.strip()
-        changed = updatedContent != editorContent
-
-        return (changed, updatedContent)
+        file = open(filePath, 'w')
+        file.write(content)
+        file.close()
 
 
-def getDiff(old, new, allLanguages):
-    result = []
+    def updateTranslation(self, key, updatedTranslation, dictionary, allLanguages, translations):
+        oldValues = self.translationFromDictionary(key, dictionary)
+        newValues = ast.literal_eval(updatedTranslation)
 
-    for lang in allLanguages:
-        oldTranslation = old[lang] if lang in old else None
-        newTranslation = new[lang] if lang in new else None
+        diff = self.getDiff(oldValues, newValues, allLanguages)
+        self.applyDiff(key, diff, translations)
 
-        if oldTranslation != newTranslation:
+    def editTranslationForKey(self, key, dictionary, translations):
+        allLanguages = list(translations.keys())
+        allLanguages.sort()
 
-            if oldTranslation is None:
-                result.append((lang, newTranslation, oldTranslation, Diff.ADDED))
-            elif newTranslation is None:
-                result.append((lang, newTranslation, oldTranslation, Diff.DELETED))
-            else:
-                result.append((lang, newTranslation, oldTranslation, Diff.UPDATED))
+        changed, content = self.openEditor(key, dictionary, allLanguages)
 
-    return result
+        if changed:
+            self.updateTranslation(key, content, dictionary, allLanguages, translations)
 
-def applyDiff(key, diff, translations):
-    for lang, newValue, oldValue, diffType in diff:
-        file, _ = translations[lang]
+    def main(self):
+        argparser = argparse.ArgumentParser(
+            prog='translations',
+            description='Saves you from touching these messy translation files in just-hire-angular.'
+        )
+        argparser.add_argument(
+            'KEY', nargs="?",
+            help='The key that shall be edited or created. If no key is provided all available translations will be listed.')
+        args = argparser.parse_args()
 
-        if Diff.ADDED == diffType:
-            addTranslation(key, newValue, file)
+        translations = self.readTranslations(TRANSLATION_DIRECTORY)
+        dictionary = self.buildTranslationsDictionary(translations)
 
-        elif Diff.UPDATED == diffType:
-            changeTranslationLine(file, key, newValue, oldValue)
+        if args.KEY is not None:
+            key = args.KEY
+            self.editTranslationForKey(key, dictionary, translations)
 
-        elif Diff.DELETED == diffType:
-            changeTranslationLine(file, key, None, oldValue)
-
-def buildTranslationLine(key, value, blockLevel, indentation='    '):
-    return '\n{}{}: {},'.format(indentation*blockLevel, key.__repr__(), value.__repr__())
-
-def buildUpdatePattern(key, value):
-    KEY = key.__repr__()
-    VALUE = value.__repr__()
-    regex = r"\s*" + re.escape(KEY) + r"\s*[:]\s*" + re.escape(VALUE) + r"\s*,?\s*\n"
-
-    return regex
-
-
-def changeTranslationLine(filePath, key, newValue, oldValue):
-    line = ''
-    if newValue is not None:
-        blockLevel = BLOCK_LEVEL + 1
-        line = buildTranslationLine(key, newValue, blockLevel)
-    line = line + '\n'
-
-    updatePattern = buildUpdatePattern(key, oldValue)
-
-    file = open(filePath, 'r')
-    content = file.read()
-    file.close()
-
-    content = re.sub(updatePattern, line, content)
-    file = open(filePath, 'w')
-    file.write(content)
-    file.close()
-
-def addTranslation(key, value, filePath):
-    blockLevel = BLOCK_LEVEL+1
-    line = buildTranslationLine(key, value, blockLevel)
-
-    file = open(filePath, 'r')
-    content = file.read()
-    file.close()
-
-    index = findNthOccurrence(content, '{', blockLevel)
-    index = index+1
-    content = content[:index] + line + content[index:]
-
-    file = open(filePath, 'w')
-    file.write(content)
-    file.close()
-
-
-def updateTranslation(key, updatedTranslation, dictionary, allLanguages, translations):
-    oldValues = translationFromDictionary(key, dictionary)
-    newValues = ast.literal_eval(updatedTranslation)
-
-    diff = getDiff(oldValues, newValues, allLanguages)
-    applyDiff(key, diff, translations)
-
-def editTranslationForKey(key, dictionary, translations):
-    allLanguages = list(translations.keys())
-    allLanguages.sort()
-
-    changed, content = openEditor(key, dictionary, allLanguages)
-
-    if changed:
-        updateTranslation(key, content, dictionary, allLanguages, translations)
-
-def main():
-    argparser = argparse.ArgumentParser(
-        prog='translations',
-        description='Saves you from touching these messy translation files in just-hire-angular.'
-    )
-    argparser.add_argument(
-        'KEY', nargs="?",
-        help='The key that shall be edited or created. If no key is provided all available translations will be listed.')
-    args = argparser.parse_args()
-
-    translations = readTranslations(TRANSLATION_DIRECTORY)
-    dictionary = buildTranslationsDictionary(translations)
-
-    if args.KEY is not None:
-        key = args.KEY
-        editTranslationForKey(key, dictionary, translations)
-
-    else:
-        ui = UI(['KEY', 'TRANSLATION'])
-        curses.wrapper(ui.loop)
+        else:
+            ui = UI(['KEY', 'TRANSLATION'])
+            curses.wrapper(ui.loop)
 
 
 if __name__ == '__main__':
-    main()
+    app = App()
+    app.main()

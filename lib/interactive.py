@@ -16,7 +16,7 @@ class UI(ListViewDelegate):
 
         curses.init_pair(colorpairs.KEY, curses.COLOR_BLACK, curses.COLOR_CYAN)
         curses.init_pair(colorpairs.DESCRIPTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        curses.init_pair(colorpairs.SELECTED, curses.COLOR_BLACK, curses.COLOR_GREEN)
+        curses.init_pair(colorpairs.SELECTED, curses.COLOR_BLACK, curses.COLOR_CYAN)
 
         curses.init_pair(colorpairs.ADDED, curses.COLOR_GREEN, curses.COLOR_BLACK)
         curses.init_pair(colorpairs.DELETED, curses.COLOR_RED, curses.COLOR_BLACK)
@@ -28,12 +28,13 @@ class UI(ListViewDelegate):
         curses.init_pair(colorpairs.CONFIRMATION, curses.COLOR_WHITE, curses.COLOR_RED)
         curses.init_pair(colorpairs.CONFIRMATION_SELECTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
-        curses.init_pair(colorpairs.FILTER_CRITERIA, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+        curses.init_pair(colorpairs.FILTER_CRITERIA, curses.COLOR_BLACK, curses.COLOR_GREEN)
         curses.init_pair(colorpairs.FILTER_CRITERIA_EDITING, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
         curses.init_pair(colorpairs.HEADER_TEXT, curses.COLOR_BLACK, curses.COLOR_WHITE)
         curses.init_pair(colorpairs.PATTERN, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
 
         curses.init_pair(colorpairs.LANG, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        curses.init_pair(colorpairs.TRANSLATION_KEY, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
     def addLegend(self, screen, legendItems):
 
@@ -157,6 +158,7 @@ class UI(ListViewDelegate):
             valueLabel.attributes.append(curses.A_BOLD)
 
             keyLabel = Label('(' + key + ')')
+            keyLabel.attributes.append(curses.color_pair(colorpairs.TRANSLATION_KEY))
 
             rowHBox.add_view(langLabel, Padding(1, 0, 0, 1))
             rowHBox.add_view(valueLabel, Padding(1, 0, 0, 1))
@@ -198,10 +200,13 @@ class UI(ListViewDelegate):
                     screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.MAIN)
                     self.app.setFilter('')
+
                 elif key == keys.ENTER:
                     self.isFiltering = False
                     screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.MAIN)
+                    if len(self.app.getFilter()) == 0:
+                        self.app.clearFilter()
 
                 elif key == keys.BACKSPACE:
                     self.app.setFilter(self.app.getFilter()[:-1])

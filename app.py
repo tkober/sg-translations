@@ -3,7 +3,9 @@ from enum import Enum
 from pathlib import Path
 from subprocess import run, PIPE, call
 import json
-import tempfile, os
+import tempfile
+import os
+import sys
 import ast
 import re
 import curses
@@ -11,8 +13,8 @@ from lib.interactive import UI
 from gupy.view import ListViewDataSource
 
 BLOCK_LEVEL = 2
-TRANSLATION_DIRECTORY = '/Users/kober/code/java/taloom/just-hire-angular/src/app/commons/provider/translation/resources'
-TRANSLATION_PATTERN = '*.properties.ts'
+TRANSLATIONS_SUBDIRECTORY = 'src/app/commons/provider/translation/resources'
+TRANSLATIONS_PATTERN = '*.properties.ts'
 
 class Diff(Enum):
     ADDED = 1
@@ -40,8 +42,8 @@ class App(ListViewDataSource):
 
         return index
 
-    def readTranslations(self, translationsDirectory, pattern=TRANSLATION_PATTERN, languagTag=lambda filename: filename.split('.')[0], blockLevel=BLOCK_LEVEL):
-        files = { languagTag(f.name): f for f in Path(translationsDirectory).rglob(pattern) }
+    def readTranslations(self, translationsDirectory, languagTag=lambda filename: filename.split('.')[0], blockLevel=BLOCK_LEVEL):
+        files = { languagTag(f.name): f for f in Path(translationsDirectory).rglob(self.translationsPattern) }
         languages = list(files.keys())
 
         result = {}
@@ -217,7 +219,9 @@ class App(ListViewDataSource):
         self.__activeFilterCriteria = activeFilterCriteria
         self.applyFilter()
 
-    def __init__(self):
+    def __init__(self, jhaHome, translationsPattern):
+        self.translationsPattern = translationsPattern
+        self.jhaHome = jhaHome
         self.__filter = ''
         self.filterCriteria = ['KEY', 'TRANSLATION']
         self.__activeFilterCriteria = self.filterCriteria[0]
@@ -231,7 +235,8 @@ class App(ListViewDataSource):
             help='The key that shall be edited or created. If no key is provided all available translations will be listed.')
         args = argparser.parse_args()
 
-        self.translations = self.readTranslations(TRANSLATION_DIRECTORY)
+        translationsDirectory = os.path.join(self.jhaHome, TRANSLATIONS_SUBDIRECTORY)
+        self.translations = self.readTranslations(translationsDirectory)
         self.dictionary = self.buildTranslationsDictionary(self.translations)
 
         if args.KEY is not None:
@@ -281,4 +286,11 @@ class App(ListViewDataSource):
 
 
 if __name__ == '__main__':
-    app = App()
+
+    jhaHomeVarName = 'JHA_HOME'
+    jhaHome = os.getenv(jhaHomeVarName)
+    if jhaHome is None:
+        print('${} is not set. Please make it available in your shell containing your Just Hire Angular directory.'.format(jhaHomeVarName), file=sys.stderr)
+        exit(-1)
+
+    App(jhaHome, TRANSLATIONS_PATTERN)

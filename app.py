@@ -272,5 +272,13 @@ class App(ListViewDataSource):
         else:
             return self.__filteredKeys[i]
 
+    def canCreateNewKeyFromFilter(self):
+        return self.__activeFilterCriteria == 'KEY' and len(self.__filter) > 0
+
+    def createNewTranslationIfPossible(self):
+        if self.canCreateNewKeyFromFilter():
+            self.openKey(self.__filter)
+
+
 if __name__ == '__main__':
     app = App()

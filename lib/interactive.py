@@ -203,15 +203,18 @@ class UI(ListViewDelegate):
                     self.app.setFilter('')
 
                 if key == keys.ENTER:
-                    data = self.app.get_data(listView.get_selected_row_index())
-                    if isinstance(data, tuple):
-                        key, _, _ = data
-                        self.app.openKey(key)
-                        exit(0)
-
+                    if self.app.number_of_rows() == 0:
+                        self.app.createNewTranslationIfPossible()
                     else:
-                        self.app.openKey(data)
-                        exit(0)
+                        data = self.app.get_data(listView.get_selected_row_index())
+                        if isinstance(data, tuple):
+                            key, _, _ = data
+                            self.app.openKey(key)
+
+                        else:
+                            self.app.openKey(data)
+
+                    exit(0)
 
                 if key == keys.Q:
                     exit(0)

@@ -210,10 +210,17 @@ class App(ListViewDataSource):
         self.__filter = filter
         self.applyFilter()
 
+    def getActiveFilterCriteria(self):
+        return self.__activeFilterCriteria
+
+    def setActiveFilterCriteria(self, activeFilterCriteria):
+        self.__activeFilterCriteria = activeFilterCriteria
+        self.applyFilter()
+
     def __init__(self):
         self.__filter = ''
         self.filterCriteria = ['KEY', 'TRANSLATION']
-        self.activeFilterCriteria = self.filterCriteria[0]
+        self.__activeFilterCriteria = self.filterCriteria[0]
 
         argparser = argparse.ArgumentParser(
             prog='translations',
@@ -226,15 +233,21 @@ class App(ListViewDataSource):
 
         self.translations = self.readTranslations(TRANSLATION_DIRECTORY)
         self.dictionary = self.buildTranslationsDictionary(self.translations)
-        self.allKeysSorted = list(self.dictionary.keys())
-        self.allKeysSorted.sort()
-        self.applyFilter()
 
         if args.KEY is not None:
             key = args.KEY
             self.openKey(key)
 
         else:
+            self.allKeysSorted = list(self.dictionary.keys())
+            self.allKeysSorted.sort()
+            self.applyFilter()
+
+            self.allTranslationItems = []
+            for key, trnsl in self.dictionary.items():
+                for lang, value in trnsl.items():
+                    self.allTranslationItems.append((key, lang, value))
+
             ui = UI(self)
             curses.wrapper(ui.loop)
 
@@ -242,13 +255,22 @@ class App(ListViewDataSource):
         self.editTranslationForKey(key, self.dictionary, self.translations)
 
     def applyFilter(self):
-        self.__filteredKeys = list(filter(lambda key: self.__filter in key, self.allKeysSorted))
+        if self.__activeFilterCriteria == 'TRANSLATION':
+            self.__filteredTranslationItems = list(filter(lambda item: self.__filter.lower() in item[2].lower(), self.allTranslationItems))
+        else:
+            self.__filteredKeys = list(filter(lambda key: self.__filter.lower() in key.lower(), self.allKeysSorted))
 
     def number_of_rows(self) -> int:
-        return len(self.__filteredKeys)
+        if self.__activeFilterCriteria == 'TRANSLATION':
+            return len(self.__filteredTranslationItems)
+        else:
+            return len(self.__filteredKeys)
 
     def get_data(self, i) -> object:
-        return self.__filteredKeys[i]
+        if self.__activeFilterCriteria == 'TRANSLATION':
+            return self.__filteredTranslationItems[i]
+        else:
+            return self.__filteredKeys[i]
 
 if __name__ == '__main__':
     app = App()

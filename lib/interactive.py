@@ -33,6 +33,8 @@ class UI(ListViewDelegate):
         curses.init_pair(colorpairs.FILTER_CRITERIA_EDITING, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
         curses.init_pair(colorpairs.FILTER_VALUE, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
+        curses.init_pair(colorpairs.LANG, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+
     def addLegend(self, screen, legendItems):
 
         moreLabel = Label('')
@@ -81,7 +83,7 @@ class UI(ListViewDelegate):
 
         filterLabel.text = self.app.getFilter()
 
-        filterCriteria = self.app.activeFilterCriteria + '='
+        filterCriteria = self.app.getActiveFilterCriteria() + '='
         if len(self.app.getFilter()) > 0:
             filterCriteriaLabel.text = filterCriteria
         else:
@@ -93,18 +95,18 @@ class UI(ListViewDelegate):
         filterCriteriaLabel.attributes.append(color)
 
     def selectPreviousFilterCriteria(self):
-        index = self.app.filterCriteria.index(self.app.activeFilterCriteria)
+        index = self.app.filterCriteria.index(self.app.getActiveFilterCriteria())
         index = index-1
         if index < 0:
             index = len(self.app.filterCriteria)-1
-        self.activeFilterCriteria = self.app.filterCriteria[index]
+        self.app.setActiveFilterCriteria(self.app.filterCriteria[index])
 
     def selectNextFilterCriteria(self):
-        index = self.app.filterCriteria.index(self.app.activeFilterCriteria)
+        index = self.app.filterCriteria.index(self.app.getActiveFilterCriteria())
         index = index+1
         if index >= len(self.app.filterCriteria):
             index = 0
-        self.activeFilterCriteria = self.app.filterCriteria[index]
+        self.app.setActiveFilterCriteria(self.app.filterCriteria[index])
 
     def addListView(self, screen):
         listView = ListView(self, self.app)
@@ -115,8 +117,22 @@ class UI(ListViewDelegate):
     def build_row(self, i, data, is_selected, width) -> View:
         rowHBox = HBox()
 
-        keyLabel = Label(data)
-        rowHBox.add_view(keyLabel, Padding(1, 0, 0, 0))
+        if isinstance(data, tuple):
+            key, lang, value = data
+            langLabel = Label('[' + lang + ']')
+            langLabel.attributes.append(curses.color_pair(colorpairs.LANG))
+
+            valueLabel = Label(value.__repr__())
+            valueLabel.attributes.append(curses.A_BOLD)
+
+            keyLabel = Label('(' + key + ')')
+
+            rowHBox.add_view(langLabel, Padding(1, 0, 0, 1))
+            rowHBox.add_view(valueLabel, Padding(1, 0, 0, 1))
+            rowHBox.add_view(keyLabel, Padding(2, 0, 0, 0))
+        else:
+            keyLabel = Label(data)
+            rowHBox.add_view(keyLabel, Padding(1, 0, 0, 0))
 
         result = rowHBox
         if is_selected:
@@ -187,9 +203,15 @@ class UI(ListViewDelegate):
                     self.app.setFilter('')
 
                 if key == keys.ENTER:
-                    key = self.app.get_data(listView.get_selected_row_index())
-                    self.app.openKey(key)
-                    exit(0)
+                    data = self.app.get_data(listView.get_selected_row_index())
+                    if isinstance(data, tuple):
+                        key, _, _ = data
+                        self.app.openKey(key)
+                        exit(0)
+
+                    else:
+                        self.app.openKey(data)
+                        exit(0)
 
                 if key == keys.Q:
                     exit(0)

@@ -202,8 +202,16 @@ class App(ListViewDataSource):
         if changed:
             self.updateTranslation(key, content, dictionary, allLanguages, translations)
 
+
+    def getFilter(self):
+        return self.__filter
+
+    def setFilter(self, filter):
+        self.__filter = filter
+        self.applyFilter()
+
     def __init__(self):
-        self.filter = ''
+        self.__filter = ''
         self.filterCriteria = ['KEY', 'TRANSLATION']
         self.activeFilterCriteria = self.filterCriteria[0]
 
@@ -220,6 +228,7 @@ class App(ListViewDataSource):
         self.dictionary = self.buildTranslationsDictionary(self.translations)
         self.allKeysSorted = list(self.dictionary.keys())
         self.allKeysSorted.sort()
+        self.applyFilter()
 
         if args.KEY is not None:
             key = args.KEY
@@ -229,11 +238,14 @@ class App(ListViewDataSource):
             ui = UI(self)
             curses.wrapper(ui.loop)
 
+    def applyFilter(self):
+        self.__filteredKeys = list(filter(lambda key: self.__filter in key, self.allKeysSorted))
+
     def number_of_rows(self) -> int:
-        return len(self.allKeysSorted)
+        return len(self.__filteredKeys)
 
     def get_data(self, i) -> object:
-        return self.allKeysSorted[i]
+        return self.__filteredKeys[i]
 
 if __name__ == '__main__':
     app = App()

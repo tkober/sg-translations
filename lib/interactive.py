@@ -79,10 +79,10 @@ class UI(ListViewDelegate):
     def updateFilterBox(self, filterElements):
         _, _, filterCriteriaLabel, filterLabel = filterElements
 
-        filterLabel.text = self.app.filter
+        filterLabel.text = self.app.getFilter()
 
         filterCriteria = self.app.activeFilterCriteria + '='
-        if len(self.app.filter) > 0:
+        if len(self.app.getFilter()) > 0:
             filterCriteriaLabel.text = filterCriteria
         else:
             filterCriteriaLabel.text = filterCriteria if self.isFiltering else ''
@@ -149,15 +149,14 @@ class UI(ListViewDelegate):
                     self.isFiltering = False
                     screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.MAIN)
-                    self.app.filter = ''
-
+                    self.app.setFilter('')
                 elif key == keys.ENTER:
                     self.isFiltering = False
                     screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.MAIN)
 
                 elif key == keys.BACKSPACE:
-                    self.app.filter = self.app.filter[:-1]
+                    self.app.setFilter(self.app.getFilter()[:-1])
 
                 elif key == keys.UP:
                     self.selectPreviousFilterCriteria()
@@ -170,7 +169,7 @@ class UI(ListViewDelegate):
 
                 else:
                     character = chr(key)
-                    self.app.filter = self.app.filter + character
+                    self.app.setFilter(self.app.getFilter() + character)
 
             else:
                 if key == keys.F:
@@ -185,7 +184,7 @@ class UI(ListViewDelegate):
                     listView.select_next()
 
                 if key == keys.C:
-                    self.app.filter = ''
+                    self.app.setFilter('')
 
                 if key == keys.Q:
                     exit(0)

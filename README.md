@@ -22,7 +22,7 @@ Some packages will be installed during the installation. If anaconda is availabl
 Without any argument this tool provides an interactive way to create, update, delete or query all JH Angular translations both by key and by content.
 However if you provide a translation key as an argument then the editing mode will be started for this directly.
 
-[![Watch the video](https://i.imgur.com/vKb2F1B.png)](https://youtu.be/vt5fpE0bzSY)
+[![Watch Demo](doc/screenshot_demo.png)](https://youtu.be/vt5fpE0bzSY)
 
 ### Run
 

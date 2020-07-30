@@ -203,7 +203,6 @@ class App(ListViewDataSource):
             self.updateTranslation(key, content, dictionary, allLanguages, translations)
 
     def __init__(self):
-        self.isFiltering = False
         self.filter = ''
         self.filterCriteria = ['KEY', 'TRANSLATION']
         self.activeFilterCriteria = self.filterCriteria[0]

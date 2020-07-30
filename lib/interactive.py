@@ -17,7 +17,7 @@ class UI(ListViewDelegate):
         curses.init_pair(colorpairs.KEY, curses.COLOR_BLACK, curses.COLOR_CYAN)
         curses.init_pair(colorpairs.DESCRIPTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
         curses.init_pair(colorpairs.PATTERN, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
-        curses.init_pair(colorpairs.SELECTED, curses.COLOR_BLACK, curses.COLOR_CYAN)
+        curses.init_pair(colorpairs.SELECTED, curses.COLOR_BLACK, curses.COLOR_GREEN)
 
         curses.init_pair(colorpairs.ADDED, curses.COLOR_GREEN, curses.COLOR_BLACK)
         curses.init_pair(colorpairs.DELETED, curses.COLOR_RED, curses.COLOR_BLACK)
@@ -85,11 +85,11 @@ class UI(ListViewDelegate):
         if len(self.app.filter) > 0:
             filterCriteriaLabel.text = filterCriteria
         else:
-            filterCriteriaLabel.text = filterCriteria if self.app.isFiltering else ''
+            filterCriteriaLabel.text = filterCriteria if self.isFiltering else ''
 
         filterCriteriaLabel.attributes.clear()
         filterCriteriaLabel.attributes.append(curses.A_BOLD)
-        color = curses.color_pair(colorpairs.FILTER_CRITERIA_EDITING) if self.app.isFiltering else curses.color_pair(colorpairs.FILTER_CRITERIA)
+        color = curses.color_pair(colorpairs.FILTER_CRITERIA_EDITING) if self.isFiltering else curses.color_pair(colorpairs.FILTER_CRITERIA)
         filterCriteriaLabel.attributes.append(color)
 
     def selectPreviousFilterCriteria(self):
@@ -106,8 +106,26 @@ class UI(ListViewDelegate):
             index = 0
         self.activeFilterCriteria = self.app.filterCriteria[index]
 
+    def addListView(self, screen):
+        listView = ListView(self, self.app)
+        screen.add_view(listView, lambda w, h, v: (0, 1, w, h-2))
+
+        return listView
+
     def build_row(self, i, data, is_selected, width) -> View:
-        pass
+        rowHBox = HBox()
+
+        keyLabel = Label(data)
+        rowHBox.add_view(keyLabel, Padding(1, 0, 0, 0))
+
+        result = rowHBox
+        if is_selected:
+            result = BackgroundView(curses.color_pair(colorpairs.SELECTED))
+            result.add_view(rowHBox)
+            for label in rowHBox.get_elements():
+                label.attributes.append(curses.color_pair(colorpairs.SELECTED))
+
+        return result
 
     def loop(self, stdscr):
 
@@ -116,6 +134,9 @@ class UI(ListViewDelegate):
         screen = ConstrainedBasedScreen(stdscr)
         legendElements = self.addLegend(screen, legends.MAIN)
         filterElements = self.addFilterBox(screen)
+        listView = self.addListView(screen)
+
+        self.isFiltering = False
 
         while 1:
             self.updateFilterBox(filterElements)
@@ -123,15 +144,15 @@ class UI(ListViewDelegate):
             screen.render()
 
             key = stdscr.getch()
-            if self.app.isFiltering:
+            if self.isFiltering:
                 if key == keys.ESCAPE:
-                    self.app.isFiltering = False
+                    self.isFiltering = False
                     screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.MAIN)
                     self.app.filter = ''
 
                 elif key == keys.ENTER:
-                    self.app.isFiltering = False
+                    self.isFiltering = False
                     screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.MAIN)
 
@@ -153,9 +174,15 @@ class UI(ListViewDelegate):
 
             else:
                 if key == keys.F:
-                    self.app.isFiltering = True
+                    self.isFiltering = True
                     screen.remove_views(list(legendElements))
                     legendElements = self.addLegend(screen, legends.FILTER)
+
+                if key == keys.UP:
+                    listView.select_previous()
+
+                if key == keys.DOWN:
+                    listView.select_next()
 
                 if key == keys.C:
                     self.app.filter = ''

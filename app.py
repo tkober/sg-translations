@@ -232,11 +232,14 @@ class App(ListViewDataSource):
 
         if args.KEY is not None:
             key = args.KEY
-            self.editTranslationForKey(key, self.dictionary, self.translations)
+            self.openKey(key)
 
         else:
             ui = UI(self)
             curses.wrapper(ui.loop)
+
+    def openKey(self, key):
+        self.editTranslationForKey(key, self.dictionary, self.translations)
 
     def applyFilter(self):
         self.__filteredKeys = list(filter(lambda key: self.__filter in key, self.allKeysSorted))

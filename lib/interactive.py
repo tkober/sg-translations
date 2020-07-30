@@ -186,5 +186,10 @@ class UI(ListViewDelegate):
                 if key == keys.C:
                     self.app.setFilter('')
 
+                if key == keys.ENTER:
+                    key = self.app.get_data(listView.get_selected_row_index())
+                    self.app.openKey(key)
+                    exit(0)
+
                 if key == keys.Q:
                     exit(0)

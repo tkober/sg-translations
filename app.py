@@ -235,8 +235,8 @@ class App(ListViewDataSource):
             help='The key that shall be edited or created. If no key is provided all available translations will be listed.')
         args = argparser.parse_args()
 
-        translationsDirectory = os.path.join(self.jhaHome, TRANSLATIONS_SUBDIRECTORY)
-        self.translations = self.readTranslations(translationsDirectory)
+        self.translationsDirectory = os.path.join(self.jhaHome, TRANSLATIONS_SUBDIRECTORY)
+        self.translations = self.readTranslations(self.translationsDirectory)
         self.dictionary = self.buildTranslationsDictionary(self.translations)
 
         if args.KEY is not None:
@@ -284,6 +284,9 @@ class App(ListViewDataSource):
         if self.canCreateNewKeyFromFilter():
             self.openKey(self.__filter)
 
+    def clearFilter(self):
+        self.setFilter('')
+        self.setActiveFilterCriteria(self.filterCriteria[0])
 
 if __name__ == '__main__':
 

@@ -16,7 +16,6 @@ class UI(ListViewDelegate):
 
         curses.init_pair(colorpairs.KEY, curses.COLOR_BLACK, curses.COLOR_CYAN)
         curses.init_pair(colorpairs.DESCRIPTION, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        curses.init_pair(colorpairs.PATTERN, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
         curses.init_pair(colorpairs.SELECTED, curses.COLOR_BLACK, curses.COLOR_GREEN)
 
         curses.init_pair(colorpairs.ADDED, curses.COLOR_GREEN, curses.COLOR_BLACK)
@@ -31,7 +30,8 @@ class UI(ListViewDelegate):
 
         curses.init_pair(colorpairs.FILTER_CRITERIA, curses.COLOR_BLACK, curses.COLOR_YELLOW)
         curses.init_pair(colorpairs.FILTER_CRITERIA_EDITING, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
-        curses.init_pair(colorpairs.FILTER_VALUE, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        curses.init_pair(colorpairs.HEADER_TEXT, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        curses.init_pair(colorpairs.PATTERN, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
 
         curses.init_pair(colorpairs.LANG, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
@@ -58,17 +58,17 @@ class UI(ListViewDelegate):
 
         return (legendHBox, moreLabel)
 
-    def addFilterBox(self, screen):
+    def addHeaderBox(self, screen):
 
-        filterBackground = BackgroundView(curses.color_pair(colorpairs.FILTER_VALUE))
+        filterBackground = BackgroundView(curses.color_pair(colorpairs.HEADER_TEXT))
         screen.add_view(filterBackground, lambda w, h, v: (0, 0, w, 1))
 
-        filterCriteriaLabel = Label('sss')
+        filterCriteriaLabel = Label()
         filterCriteriaLabel.attributes.append(curses.color_pair(colorpairs.FILTER_CRITERIA))
         filterCriteriaLabel.attributes.append(curses.A_BOLD)
 
-        filterLabel = Label('...')
-        filterLabel.attributes.append(curses.color_pair(colorpairs.FILTER_VALUE))
+        filterLabel = Label()
+        filterLabel.attributes.append(curses.color_pair(colorpairs.HEADER_TEXT))
 
         filterHBox = HBox();
         filterHBox.add_view(filterCriteriaLabel, Padding(0, 0, 0, 0))
@@ -78,7 +78,31 @@ class UI(ListViewDelegate):
 
         return (filterBackground, filterHBox, filterCriteriaLabel, filterLabel)
 
-    def updateFilterBox(self, filterElements):
+    def addTitle(self, screen):
+
+        path = Path(self.app.translationsDirectory)
+        try:
+            relative = path.relative_to(Path.home())
+            title = '~/' + str(relative)
+        except ValueError:
+            pass
+
+        directoryLabel = Label(title)
+        directoryLabel.attributes.append(curses.color_pair(colorpairs.HEADER_TEXT))
+        directoryLabel.attributes.append(curses.A_BOLD)
+
+        patternLabel = Label('['+self.app.translationsPattern+']')
+        patternLabel.attributes.append(curses.color_pair(colorpairs.PATTERN))
+        patternLabel.attributes.append(curses.A_BOLD)
+
+        title_hbox = HBox()
+        title_hbox.add_view(directoryLabel, Padding(0, 0, 0, 0))
+        title_hbox.add_view(patternLabel, Padding(1, 0, 0, 0))
+        screen.add_view(title_hbox, lambda w, h, v: ((w - v.required_size().width) // 2, 0, title_hbox.required_size().width + 1, 1))
+
+        return (title_hbox, directoryLabel, patternLabel)
+
+    def updateHeaderBox(self, screen, filterElements):
         _, _, filterCriteriaLabel, filterLabel = filterElements
 
         filterLabel.text = self.app.getFilter()
@@ -93,6 +117,13 @@ class UI(ListViewDelegate):
         filterCriteriaLabel.attributes.append(curses.A_BOLD)
         color = curses.color_pair(colorpairs.FILTER_CRITERIA_EDITING) if self.isFiltering else curses.color_pair(colorpairs.FILTER_CRITERIA)
         filterCriteriaLabel.attributes.append(color)
+
+        if len(self.app.getFilter()) == 0 and not self.isFiltering:
+            self.titleElements = self.addTitle(screen)
+        else:
+            screen.remove_views(self.titleElements)
+            self.titleElements = []
+
 
     def selectPreviousFilterCriteria(self):
         index = self.app.filterCriteria.index(self.app.getActiveFilterCriteria())
@@ -148,14 +179,15 @@ class UI(ListViewDelegate):
         self.setupColors()
 
         screen = ConstrainedBasedScreen(stdscr)
+        self.titleElements = []
         legendElements = self.addLegend(screen, legends.MAIN)
-        filterElements = self.addFilterBox(screen)
+        headerElements = self.addHeaderBox(screen)
         listView = self.addListView(screen)
 
         self.isFiltering = False
 
         while 1:
-            self.updateFilterBox(filterElements)
+            self.updateHeaderBox(screen, headerElements)
 
             screen.render()
 
@@ -200,7 +232,7 @@ class UI(ListViewDelegate):
                     listView.select_next()
 
                 if key == keys.C:
-                    self.app.setFilter('')
+                    self.app.clearFilter()
 
                 if key == keys.ENTER:
                     if self.app.number_of_rows() == 0:

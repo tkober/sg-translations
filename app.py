@@ -201,7 +201,7 @@ class App:
         if changed:
             self.updateTranslation(key, content, dictionary, allLanguages, translations)
 
-    def main(self):
+    def __init__(self):
         argparser = argparse.ArgumentParser(
             prog='translations',
             description='Saves you from touching these messy translation files in just-hire-angular.'
@@ -211,12 +211,12 @@ class App:
             help='The key that shall be edited or created. If no key is provided all available translations will be listed.')
         args = argparser.parse_args()
 
-        translations = self.readTranslations(TRANSLATION_DIRECTORY)
-        dictionary = self.buildTranslationsDictionary(translations)
+        self.translations = self.readTranslations(TRANSLATION_DIRECTORY)
+        self.dictionary = self.buildTranslationsDictionary(self.translations)
 
         if args.KEY is not None:
             key = args.KEY
-            self.editTranslationForKey(key, dictionary, translations)
+            self.editTranslationForKey(key, self.dictionary, self.translations)
 
         else:
             ui = UI(['KEY', 'TRANSLATION'])
@@ -224,5 +224,4 @@ class App:
 
 
 if __name__ == '__main__':
-    app = App()
-    app.main()
+    App()

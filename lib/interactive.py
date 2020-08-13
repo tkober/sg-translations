@@ -218,6 +218,9 @@ class UI(ListViewDelegate):
             screen.render()
 
             key = stdscr.getch()
+            if key == curses.KEY_RESIZE:
+                continue
+
             if self.isFiltering:
                 if key == keys.ESCAPE:
                     self.isFiltering = False

@@ -177,7 +177,7 @@ class UI(ListViewDelegate):
             rowHBox.add_view(langLabel, Padding(1, 0, 0, 0))
             rowHBox.add_view(valueLabel, Padding(2, 0, 0, 0))
 
-            if rowHBox.required_size().width > width:
+            if rowHBox.required_size().width >= width:
                 length = (rowHBox.required_size().width - width) + 1
                 self.clipLabel(valueLabel, length)
             else:
@@ -187,7 +187,7 @@ class UI(ListViewDelegate):
             keyLabel = Label(data)
             rowHBox.add_view(keyLabel, Padding(1, 0, 0, 0))
 
-            if rowHBox.required_size().width > width:
+            if rowHBox.required_size().width >= width:
                 length = (rowHBox.required_size().width - width) + 1
                 self.clipLabel(keyLabel, length, clipping=Clipping.BEGIN)
 

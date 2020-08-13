@@ -3,7 +3,12 @@ from gupy.view import BackgroundView, Label, HBox, ListView, ListViewDelegate, V
 from gupy.screen import ConstrainedBasedScreen
 from lib import colorpairs, keys, legends
 from pathlib import Path
+from enum import Enum
 import curses
+
+class Clipping(Enum):
+    BEGIN = 1
+    END = 2
 
 
 class UI(ListViewDelegate):
@@ -146,6 +151,15 @@ class UI(ListViewDelegate):
 
         return listView
 
+    def clipLabel(self, label, length, indicator='...', clipping=Clipping.END):
+        length = length + len(indicator)
+        if clipping == Clipping.END:
+            clippedValue = label.text[:-length] + indicator
+        else:
+            clippedValue = indicator + label.text[length:]
+
+        label.text = clippedValue
+
     def build_row(self, i, data, is_selected, width) -> View:
         rowHBox = HBox()
 
@@ -160,20 +174,22 @@ class UI(ListViewDelegate):
             keyLabel = Label('(' + key + ')')
             keyLabel.attributes.append(curses.color_pair(colorpairs.TRANSLATION_KEY))
 
-            rowHBox.add_view(langLabel, Padding(1, 0, 0, 1))
-            rowHBox.add_view(valueLabel, Padding(1, 0, 0, 1))
+            rowHBox.add_view(langLabel, Padding(1, 0, 0, 0))
+            rowHBox.add_view(valueLabel, Padding(2, 0, 0, 0))
 
             if rowHBox.required_size().width > width:
-                sizeToClip = width - rowHBox.required_size().width
-                sizeToClip = sizeToClip - 4
-                clippedValue = valueLabel.text[:sizeToClip] + '...'
-                valueLabel.text = clippedValue
+                length = (rowHBox.required_size().width - width) + 1
+                self.clipLabel(valueLabel, length)
             else:
                 rowHBox.add_view(keyLabel, Padding(2, 0, 0, 0))
 
         else:
             keyLabel = Label(data)
             rowHBox.add_view(keyLabel, Padding(1, 0, 0, 0))
+
+            if rowHBox.required_size().width > width:
+                length = (rowHBox.required_size().width - width) + 1
+                self.clipLabel(keyLabel, length, clipping=Clipping.BEGIN)
 
         result = rowHBox
         if is_selected:

@@ -6,6 +6,12 @@ This tool saves you from touching these messy translation files in just-hire-ang
 
 In order do install or run this tool make sure either PIP or Anaconda is installed and available on your bash.
 
+## Cloning
+
+This repo contains git submodules. Remember to initialize these by running
+
+`git submodule init`
+
 
 ## Install
 
@@ -17,12 +23,12 @@ The repository's root directory contains a bash script for installation.
 
 Some packages will be installed during the installation. If anaconda is available a seperate environment will be created. If Anaconda is not found PIP will be used instead. This could lead to overwriting existing packages or versions. The usage of Anaconda is highly recommended. You can get it [here](https://www.anaconda.com/).
 
-## translations
+## Demo
 
 Without any argument this tool provides an interactive way to create, update, delete or query all JH Angular translations both by key and by content.
 However if you provide a translation key as an argument then the editing mode will be started for this directly.
 
-[![Watch Demo](doc/screenshot_demo.png)](https://youtu.be/vt5fpE0bzSY)
+[![Watch Demo](doc/screenshot_demo.png)](https://youtu.be/U9hK9dsKim8)
 
 ### Run
 
@@ -32,7 +38,7 @@ After installation _sg-translations_ is available in your bash using the followi
 
 If no path is provided the current directory will be used.
 
-### man
+### -h
 ```
 usage: translations [-h] [KEY]
 

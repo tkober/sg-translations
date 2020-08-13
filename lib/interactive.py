@@ -162,7 +162,15 @@ class UI(ListViewDelegate):
 
             rowHBox.add_view(langLabel, Padding(1, 0, 0, 1))
             rowHBox.add_view(valueLabel, Padding(1, 0, 0, 1))
-            rowHBox.add_view(keyLabel, Padding(2, 0, 0, 0))
+
+            if rowHBox.required_size().width > width:
+                sizeToClip = width - rowHBox.required_size().width
+                sizeToClip = sizeToClip - 4
+                clippedValue = valueLabel.text[:sizeToClip] + '...'
+                valueLabel.text = clippedValue
+            else:
+                rowHBox.add_view(keyLabel, Padding(2, 0, 0, 0))
+
         else:
             keyLabel = Label(data)
             rowHBox.add_view(keyLabel, Padding(1, 0, 0, 0))

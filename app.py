@@ -152,6 +152,19 @@ class App(ListViewDataSource):
 
         return regex
 
+    def buildRenameKeyPattern(self, key):
+        KEY = key.__repr__()
+        return re.escape(KEY)
+
+    def updateFile(self, filePath, updatePattern, replacement):
+        file = open(filePath, 'r')
+        content = file.read()
+        file.close()
+
+        content = re.sub(updatePattern, replacement, content)
+        file = open(filePath, 'w')
+        file.write(content)
+        file.close()
 
     def changeTranslationLine(self, filePath, key, newValue, oldValue):
         line = ''
@@ -159,17 +172,8 @@ class App(ListViewDataSource):
             blockLevel = BLOCK_LEVEL + 1
             line = self.buildTranslationLine(key, newValue, blockLevel)
         line = line + '\n'
-
         updatePattern = self.buildUpdatePattern(key, oldValue)
-
-        file = open(filePath, 'r')
-        content = file.read()
-        file.close()
-
-        content = re.sub(updatePattern, line, content)
-        file = open(filePath, 'w')
-        file.write(content)
-        file.close()
+        self.updateFile(filePath, updatePattern, line)
 
     def addTranslation(self, key, value, filePath):
         blockLevel = BLOCK_LEVEL+1
@@ -304,7 +308,13 @@ class App(ListViewDataSource):
     def renameKey(self, key, name):
         self.assertKeyExists(key)
         self.assertKeyNotUsed(name)
-        print('rename: ' + key + ' -> ' + name)
+        languages = self.dictionary[key].keys()
+        files = [self.translations[lang][0] for lang in languages]
+
+        for file in files:
+            pattern = self.buildRenameKeyPattern(key)
+            newKey = name.__repr__()
+            self.updateFile(file, pattern, newKey)
 
     def applyFilter(self):
         if self.__activeFilterCriteria == 'TRANSLATION':

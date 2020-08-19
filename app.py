@@ -309,12 +309,13 @@ class App(ListViewDataSource):
         self.assertKeyExists(key)
         self.assertKeyNotUsed(name)
         languages = self.dictionary[key].keys()
-        files = [self.translations[lang][0] for lang in languages]
+        files = [(self.translations[lang][0], lang) for lang in languages]
 
-        for file in files:
+        for file, lang in files:
             pattern = self.buildRenameKeyPattern(key)
             newKey = name.__repr__()
             self.updateFile(file, pattern, newKey)
+            print('Renamed key {} to {} for language [{}] in {}'.format(key.__repr__(), newKey, lang.upper(), file))
 
     def applyFilter(self):
         if self.__activeFilterCriteria == 'TRANSLATION':

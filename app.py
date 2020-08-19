@@ -285,10 +285,25 @@ class App(ListViewDataSource):
     def openKey(self, key):
         self.editTranslationForKey(key, self.dictionary, self.translations)
 
+    def assertKeyExists(self, key):
+        if key not in self.dictionary:
+            print('Key \'{}\' does not exist.'.format(key), file=sys.stderr)
+            exit(-2)
+
+    def assertKeyNotUsed(self, key):
+        if key in self.dictionary:
+            print('Key \'{}\' is already being used.'.format(key), file=sys.stderr)
+            exit(-3)
+
     def deleteKey(self, key):
-        print('delete: ' + key)
+        self.assertKeyExists(key)
+        languages = self.dictionary[key].keys()
+        diff = [(language, None, self.dictionary[key][language], Diff.DELETED) for language in languages]
+        self.applyDiff(key, diff, self.translations)
 
     def renameKey(self, key, name):
+        self.assertKeyExists(key)
+        self.assertKeyNotUsed(name)
         print('rename: ' + key + ' -> ' + name)
 
     def applyFilter(self):

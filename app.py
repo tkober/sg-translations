@@ -242,7 +242,7 @@ class App(ListViewDataSource):
         group.add_argument(
             '-r',
             '--rename',
-            help="Delete the given KEY",
+            help="Rename the given KEY",
             metavar='NAME'
         )
 

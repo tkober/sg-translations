@@ -302,8 +302,12 @@ class App(ListViewDataSource):
     def deleteKey(self, key):
         self.assertKeyExists(key)
         languages = self.dictionary[key].keys()
-        diff = [(language, None, self.dictionary[key][language], Diff.DELETED) for language in languages]
-        self.applyDiff(key, diff, self.translations)
+
+        files = [(self.translations[lang][0], lang) for lang in languages]
+        for file, lang in files:
+            value = self.dictionary[key][lang]
+            self.changeTranslationLine(file, key, None, value)
+            print('Removed key {} from language [{}] in {}'.format(key.__repr__(), lang.upper(), file))
 
     def renameKey(self, key, name):
         self.assertKeyExists(key)

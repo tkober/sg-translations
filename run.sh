@@ -7,4 +7,4 @@ if [ -x "$(command -v conda)" ]; then
 fi
 
 BASEDIR=$(dirname "$0")
-python "$BASEDIR/app.py" $1
+python "$BASEDIR/app.py" $@

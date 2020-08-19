@@ -219,13 +219,7 @@ class App(ListViewDataSource):
         self.__activeFilterCriteria = activeFilterCriteria
         self.applyFilter()
 
-    def __init__(self, jhaHome, translationsPattern):
-        self.translationsPattern = translationsPattern
-        self.jhaHome = jhaHome
-        self.__filter = ''
-        self.filterCriteria = ['KEY', 'TRANSLATION']
-        self.__activeFilterCriteria = self.filterCriteria[0]
-
+    def parseArgs(self):
         argparser = argparse.ArgumentParser(
             prog='translations',
             description='Saves you from touching these messy translation files in just-hire-angular.'
@@ -233,7 +227,31 @@ class App(ListViewDataSource):
         argparser.add_argument(
             'KEY', nargs="?",
             help='The key that shall be edited or created. If no key is provided all available translations will be listed.')
-        args = argparser.parse_args()
+
+        group = argparser.add_mutually_exclusive_group()
+        group.add_argument(
+            '-d',
+            '--delete',
+            help="Delete the given KEY",
+            action="store_true"
+        )
+        group.add_argument(
+            '-r',
+            '--rename',
+            help="Delete the given KEY",
+            metavar='NAME'
+        )
+
+        return argparser.parse_args()
+
+    def __init__(self, jhaHome, translationsPattern):
+        self.translationsPattern = translationsPattern
+        self.jhaHome = jhaHome
+        self.__filter = ''
+        self.filterCriteria = ['KEY', 'TRANSLATION']
+        self.__activeFilterCriteria = self.filterCriteria[0]
+
+        args = self.parseArgs()
 
         self.translationsDirectory = os.path.join(self.jhaHome, TRANSLATIONS_SUBDIRECTORY)
         self.translations = self.readTranslations(self.translationsDirectory)
@@ -241,7 +259,15 @@ class App(ListViewDataSource):
 
         if args.KEY is not None:
             key = args.KEY
-            self.openKey(key)
+
+            if args.delete:
+                self.deleteKey(key)
+
+            elif args.rename:
+                self.renameKey(key, args.rename)
+
+            else:
+                self.openKey(key)
 
         else:
             self.allKeysSorted = list(self.dictionary.keys())
@@ -258,6 +284,12 @@ class App(ListViewDataSource):
 
     def openKey(self, key):
         self.editTranslationForKey(key, self.dictionary, self.translations)
+
+    def deleteKey(self, key):
+        print('delete: ' + key)
+
+    def renameKey(self, key, name):
+        print('rename: ' + key + ' -> ' + name)
 
     def applyFilter(self):
         if self.__activeFilterCriteria == 'TRANSLATION':

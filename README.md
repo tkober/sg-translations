@@ -34,7 +34,7 @@ However if you provide a translation key as an argument then the editing mode wi
 
 After installation _sg-translations_ is available in your bash using the following command:
 
-`translations [KEY]`
+`translations [-h] [-d | -r NAME] [KEY]`
 
 If no path is provided the current directory will be used.
 

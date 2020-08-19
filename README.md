@@ -40,14 +40,17 @@ If no path is provided the current directory will be used.
 
 ### -h
 ```
-usage: translations [-h] [KEY]
+usage: translations [-h] [-d | -r NAME] [KEY]
 
 Saves you from touching these messy translation files in just-hire-angular.
 
 positional arguments:
-  KEY         The key that shall be edited or created. If no key is provided all available translations will be listed.
+  KEY                   The key that shall be edited or created. If no key is provided all available translations will be listed.
 
 optional arguments:
-  -h, --help  show this help message and exit
+  -h, --help            show this help message and exit
+  -d, --delete          Delete the given KEY
+  -r NAME, --rename NAME
+                        Rename the given KEY
 ```
 

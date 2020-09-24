@@ -11,6 +11,7 @@ import re
 import curses
 from lib.interactive import UI
 from gupy.view import ListViewDataSource
+import pandas as pd
 
 BLOCK_LEVEL = 2
 TRANSLATIONS_SUBDIRECTORY = 'src/app/commons/provider/translation/resources'
@@ -262,10 +263,30 @@ class App(ListViewDataSource):
             print("Migrated {} translations from '{}' to '{}'".format(len(jsonObject), file, path))
 
     def migrateLanguage(self, path, jsonObject):
-        outJson = json.dumps(jsonObject, ensure_ascii=False, indent=4, sort_keys=True)
+        outJson = self.buildGroupedJson(jsonObject)
         file = open(path, 'w')
         file.write(outJson)
         file.close()
+
+    def buildGroupedJson(self, jsonObject):
+        jsonDict = {
+            'key': list(jsonObject.keys()),
+            'value': list(jsonObject.values())
+        }
+        df = pd.DataFrame(jsonDict)
+        df = df.sort_values(by='key')
+        df['group'] = df.apply(lambda row: row.key.split('.')[0] if '.' in row.key else '', axis=1)
+
+        complete = []
+        for groupName, group in df.groupby(['group']):
+            groupDict = dict(zip(group.key, group.value))
+            groupJson = json.dumps(groupDict, ensure_ascii=False, indent=4, sort_keys=True)
+            groupJson = groupJson[1:-1]
+            groupJson = groupJson.rstrip()
+            complete.append(groupJson)
+
+        result = '{' + (',\n'.join(complete)) + '\n}'
+        return result
 
     def __init__(self, jhaHome, translationsPattern):
         self.translationsPattern = translationsPattern

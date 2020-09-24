@@ -245,8 +245,27 @@ class App(ListViewDataSource):
             help="Rename the given KEY",
             metavar='NAME'
         )
+        group.add_argument(
+            '--migrate',
+            help="Migrates the *.ts files to *.json files",
+            action="store_true"
+        )
 
         return argparser.parse_args()
+
+    def migrateTsToJson(self, translations):
+        for locale, (file, jsonObject) in translations.items():
+            directory = os.path.dirname(file)
+            filename = '{}.json'.format(locale)
+            path = os.path.join(directory, filename)
+            self.migrateLanguage(path, jsonObject)
+            print("Migrated {} translations from '{}' to '{}'".format(len(jsonObject), file, path))
+
+    def migrateLanguage(self, path, jsonObject):
+        outJson = json.dumps(jsonObject, ensure_ascii=False, indent=4, sort_keys=True)
+        file = open(path, 'w')
+        file.write(outJson)
+        file.close()
 
     def __init__(self, jhaHome, translationsPattern):
         self.translationsPattern = translationsPattern
@@ -259,6 +278,11 @@ class App(ListViewDataSource):
 
         self.translationsDirectory = os.path.join(self.jhaHome, TRANSLATIONS_SUBDIRECTORY)
         self.translations = self.readTranslations(self.translationsDirectory)
+
+        if args.migrate:
+            self.migrateTsToJson(self.translations)
+            exit()
+
         self.dictionary = self.buildTranslationsDictionary(self.translations)
 
         if args.KEY is not None:

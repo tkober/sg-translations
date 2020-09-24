@@ -5,6 +5,8 @@ from lib import colorpairs, keys, legends
 from pathlib import Path
 from enum import Enum
 import curses
+import subprocess
+import platform
 
 class Clipping(Enum):
     BEGIN = 1
@@ -200,13 +202,16 @@ class UI(ListViewDelegate):
 
         return result
 
+    def isMacOs(self):
+        return platform.system() == 'Darwin'
+
     def loop(self, stdscr):
 
         self.setupColors()
 
         screen = ConstrainedBasedScreen(stdscr)
         self.titleElements = []
-        legendElements = self.addLegend(screen, legends.MAIN)
+        legendElements = self.addLegend(screen, legends.main())
         headerElements = self.addHeaderBox(screen)
         listView = self.addListView(screen)
 
@@ -225,13 +230,13 @@ class UI(ListViewDelegate):
                 if key == keys.ESCAPE:
                     self.isFiltering = False
                     screen.remove_views(list(legendElements))
-                    legendElements = self.addLegend(screen, legends.MAIN)
+                    legendElements = self.addLegend(screen, legends.main())
                     self.app.setFilter('')
 
                 elif key == keys.ENTER:
                     self.isFiltering = False
                     screen.remove_views(list(legendElements))
-                    legendElements = self.addLegend(screen, legends.MAIN)
+                    legendElements = self.addLegend(screen, legends.main())
                     if len(self.app.getFilter()) == 0:
                         self.app.clearFilter()
 
@@ -255,7 +260,7 @@ class UI(ListViewDelegate):
                 if key == keys.F:
                     self.isFiltering = True
                     screen.remove_views(list(legendElements))
-                    legendElements = self.addLegend(screen, legends.FILTER)
+                    legendElements = self.addLegend(screen, legends.filter())
 
                 if key == keys.UP:
                     listView.select_previous()
@@ -279,6 +284,17 @@ class UI(ListViewDelegate):
                             self.app.openKey(data)
 
                     exit(0)
+
+                if self.isMacOs() and key == keys.K:
+                    if self.app.number_of_rows() > 0:
+                        data = self.app.get_data(listView.get_selected_row_index())
+                        if isinstance(data, tuple):
+                            key, _, _ = data if isinstance(data, tuple) else data
+
+                        else:
+                            key = data
+
+                        subprocess.run("pbcopy", universal_newlines=True, input=key)
 
                 if key == keys.Q:
                     exit(0)

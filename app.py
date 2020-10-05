@@ -380,21 +380,25 @@ class App(ListViewDataSource):
 
         for lang in self.translations.keys():
             path, jsonObject = self.translations[lang]
-            del jsonObject[key]
-            self.saveTranslationClean(path, jsonObject)
-            print('Removed key {} from language [{}] in {}'.format(key.__repr__(), lang.upper(), path))
 
-    def renameKey(self, key, name):
+            if key in jsonObject.keys():
+                del jsonObject[key]
+                self.saveTranslationClean(path, jsonObject)
+                print('Removed key {} from language [{}] in {}'.format(key.__repr__(), lang.upper(), path))
+
+    def renameKey(self, key, newKey):
         self.assertKeyExists(key)
-        self.assertKeyNotUsed(name)
-        languages = self.dictionary[key].keys()
-        files = [(self.translations[lang][0], lang) for lang in languages]
+        self.assertKeyNotUsed(newKey)
 
-        for file, lang in files:
-            pattern = self.buildRenameKeyPattern(key)
-            newKey = name.__repr__()
-            self.updateFile(file, pattern, newKey)
-            print('Renamed key {} to {} for language [{}] in {}'.format(key.__repr__(), newKey, lang.upper(), file))
+        for lang in self.translations.keys():
+            path, jsonObject = self.translations[lang]
+
+            if key in jsonObject.keys():
+                value = jsonObject[key]
+                jsonObject[newKey] = value
+                del jsonObject[key]
+                self.saveTranslationClean(path, jsonObject)
+                print('Renamed key {} to {} for language [{}] in {}'.format(key.__repr__(), newKey, lang.upper(), path))
 
     def applyFilter(self):
         if self.__activeFilterCriteria == 'TRANSLATION':

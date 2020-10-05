@@ -43,7 +43,7 @@ class App(ListViewDataSource):
 
         return index
 
-    def readTranslations(self, translationsDirectory, languagTag=lambda filename: filename.split('.')[0], blockLevel=BLOCK_LEVEL):
+    def readTranslationsFromTypeScript(self, translationsDirectory, languagTag=lambda filename: filename.split('.')[0], blockLevel=BLOCK_LEVEL):
         files = { languagTag(f.name): f for f in Path(translationsDirectory).rglob(self.translationsPattern) }
         languages = list(files.keys())
 
@@ -298,7 +298,7 @@ class App(ListViewDataSource):
         args = self.parseArgs()
 
         self.translationsDirectory = os.path.join(self.jhaHome, TRANSLATIONS_SUBDIRECTORY)
-        self.translations = self.readTranslations(self.translationsDirectory)
+        self.translations = self.readTranslationsFromTypeScript(self.translationsDirectory)
 
         if args.migrate:
             self.migrateTsToJson(self.translations)

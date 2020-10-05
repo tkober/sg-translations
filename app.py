@@ -11,7 +11,7 @@ import re
 import curses
 from lib.interactive import UI
 from gupy.view import ListViewDataSource
-import pandas as pd
+from importlib import import_module
 
 BLOCK_LEVEL = 2
 TRANSLATIONS_SUBDIRECTORY = 'src/app/commons/provider/translation/resources'
@@ -273,6 +273,7 @@ class App(ListViewDataSource):
             'key': list(jsonObject.keys()),
             'value': list(jsonObject.values())
         }
+        pd = import_module('pandas')
         df = pd.DataFrame(jsonDict)
         df = df.sort_values(by='key')
         df['group'] = df.apply(lambda row: row.key.split('.')[0] if '.' in row.key else '', axis=1)

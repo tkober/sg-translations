@@ -377,13 +377,12 @@ class App(ListViewDataSource):
 
     def deleteKey(self, key):
         self.assertKeyExists(key)
-        languages = self.dictionary[key].keys()
 
-        files = [(self.translations[lang][0], lang) for lang in languages]
-        for file, lang in files:
-            value = self.dictionary[key][lang]
-            self.changeTranslationLine(file, key, None, value)
-            print('Removed key {} from language [{}] in {}'.format(key.__repr__(), lang.upper(), file))
+        for lang in self.translations.keys():
+            path, jsonObject = self.translations[lang]
+            del jsonObject[key]
+            self.saveTranslationClean(path, jsonObject)
+            print('Removed key {} from language [{}] in {}'.format(key.__repr__(), lang.upper(), path))
 
     def renameKey(self, key, name):
         self.assertKeyExists(key)

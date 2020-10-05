@@ -38,9 +38,9 @@ After installation _sg-translations_ is available in your bash using the followi
 
 If no path is provided the current directory will be used.
 
-### -h
+### --help
 ```
-usage: translations [-h] [-d | -r NAME] [KEY]
+usage: translations [-h] [-d | -r NAME | --migrate | --cleanup] [KEY]
 
 Saves you from touching these messy translation files in just-hire-angular.
 
@@ -52,5 +52,7 @@ optional arguments:
   -d, --delete          Delete the given KEY
   -r NAME, --rename NAME
                         Rename the given KEY
+  --migrate             Migrates the *.ts files to *.json files
+  --cleanup             Cleans up all *.json files
 ```
 

@@ -15,7 +15,8 @@ from importlib import import_module
 
 BLOCK_LEVEL = 2
 TRANSLATIONS_SUBDIRECTORY = 'src/app/commons/provider/translation/resources'
-TRANSLATIONS_PATTERN = '*.json'
+TRANSLATIONS_PATTERN_TS   = '*.properties.ts'
+TRANSLATIONS_PATTERN_JSON = '*.json'
 
 class Diff(Enum):
     ADDED = 1
@@ -265,6 +266,11 @@ class App(ListViewDataSource):
             help="Migrates the *.ts files to *.json files",
             action="store_true"
         )
+        group.add_argument(
+            '--cleanup',
+            help="Cleans up all *.json files",
+            action="store_true"
+        )
 
         return argparser.parse_args()
 
@@ -273,10 +279,10 @@ class App(ListViewDataSource):
             directory = os.path.dirname(file)
             filename = '{}.json'.format(locale)
             path = os.path.join(directory, filename)
-            self.migrateLanguage(path, jsonObject)
+            self.saveTranslationClean(path, jsonObject)
             print("Migrated {} translations from '{}' to '{}'".format(len(jsonObject), file, path))
 
-    def migrateLanguage(self, path, jsonObject):
+    def saveTranslationClean(self, path, jsonObject):
         outJson = self.buildGroupedJson(jsonObject)
         file = open(path, 'w')
         file.write(outJson)
@@ -303,8 +309,8 @@ class App(ListViewDataSource):
         result = '{' + (',\n'.join(complete)) + '\n}'
         return result
 
-    def __init__(self, jhaHome, translationsPattern):
-        self.translationsPattern = translationsPattern
+    def __init__(self, jhaHome):
+        self.translationsPattern = TRANSLATIONS_PATTERN_JSON
         self.jhaHome = jhaHome
         self.__filter = ''
         self.filterCriteria = ['KEY', 'TRANSLATION']
@@ -315,11 +321,19 @@ class App(ListViewDataSource):
         self.translationsDirectory = os.path.join(self.jhaHome, TRANSLATIONS_SUBDIRECTORY)
 
         if args.migrate:
+            self.translationsPattern = TRANSLATIONS_PATTERN_TS
             self.translations = self.readTranslationsFromTypeScript(self.translationsDirectory)
             self.migrateTsToJson(self.translations)
             exit()
         else:
             self.translations = self.readTranslationsFromJson(self.translationsDirectory)
+
+        if args.cleanup:
+            for key in self.translations.keys():
+                path, jsonObject = self.translations[key]
+                self.saveTranslationClean(path, jsonObject)
+                print("Cleaned up translations for locale '{}' in '{}'".format(key, path))
+            exit()
 
         self.dictionary = self.buildTranslationsDictionary(self.translations)
 
@@ -420,4 +434,4 @@ if __name__ == '__main__':
         print('${} is not set. Please make it available in your shell containing your Just Hire Angular directory.'.format(jhaHomeVarName), file=sys.stderr)
         exit(-1)
 
-    App(jhaHome, TRANSLATIONS_PATTERN)
+    App(jhaHome)

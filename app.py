@@ -15,7 +15,7 @@ from importlib import import_module
 
 BLOCK_LEVEL = 2
 TRANSLATIONS_SUBDIRECTORY = 'src/app/commons/provider/translation/resources'
-TRANSLATIONS_PATTERN = '*.properties.ts'
+TRANSLATIONS_PATTERN = '*.json'
 
 class Diff(Enum):
     ADDED = 1
@@ -64,6 +64,20 @@ class App(ListViewDataSource):
             jsonString = p.stdout.decode('utf-8')
             translationJson = json.loads(jsonString)
 
+            result[language] = (files[language], translationJson)
+
+        return result
+
+    def readTranslationsFromJson(self, translationsDirectory, languagTag=lambda filename: filename.split('.')[0]):
+        files = {languagTag(f.name): f for f in Path(translationsDirectory).rglob(self.translationsPattern)}
+        languages = list(files.keys())
+        result = {}
+
+        for language in languages:
+            file = open(files[language], 'r')
+            jsonString = file.read()
+            file.close()
+            translationJson = json.loads(jsonString)
             result[language] = (files[language], translationJson)
 
         return result
@@ -299,11 +313,13 @@ class App(ListViewDataSource):
         args = self.parseArgs()
 
         self.translationsDirectory = os.path.join(self.jhaHome, TRANSLATIONS_SUBDIRECTORY)
-        self.translations = self.readTranslationsFromTypeScript(self.translationsDirectory)
 
         if args.migrate:
+            self.translations = self.readTranslationsFromTypeScript(self.translationsDirectory)
             self.migrateTsToJson(self.translations)
             exit()
+        else:
+            self.translations = self.readTranslationsFromJson(self.translationsDirectory)
 
         self.dictionary = self.buildTranslationsDictionary(self.translations)
 

@@ -103,9 +103,8 @@ class App(ListViewDataSource):
             translation = entry[lang] if lang in entry else None
             completeEntry[lang] = translation
 
-        items = ['\t{}: {}'.format(key.__repr__(), value.__repr__()) for key, value in completeEntry.items()]
-        itemsFormatted = ',\n'.join(items)
-        result = '# ' + key + '\n{\n' + itemsFormatted + '\n}'
+        jsonContent = json.dumps(completeEntry, ensure_ascii=False, indent=4, sort_keys=True)
+        result = '# ' + key + '\n' + jsonContent
 
         return result
 
@@ -147,16 +146,21 @@ class App(ListViewDataSource):
 
     def applyDiff(self, key, diff, translations):
         for lang, newValue, oldValue, diffType in diff:
-            file, _ = translations[lang]
+            path, translationObject = translations[lang]
 
             if Diff.ADDED == diffType:
-                self.addTranslation(key, newValue, file)
+                translationObject[key] = newValue
 
             elif Diff.UPDATED == diffType:
-                self.changeTranslationLine(file, key, newValue, oldValue)
+                translationObject[key] = newValue
 
             elif Diff.DELETED == diffType:
-                self.changeTranslationLine(file, key, None, oldValue)
+                if key in translationObject:
+                    del translationObject[key]
+                else:
+                    continue
+
+            self.saveTranslationClean(path, translationObject)
 
     def buildTranslationLine(self, key, value, blockLevel, indentation='    '):
         return '\n{}{}: {},'.format(indentation*blockLevel, key.__repr__(), value.__repr__())
@@ -208,12 +212,14 @@ class App(ListViewDataSource):
         file.close()
 
 
-    def updateTranslation(self, key, updatedTranslation, dictionary, allLanguages, translations):
-        oldValues = self.translationFromDictionary(key, dictionary)
-        newValues = ast.literal_eval(updatedTranslation)
+    def updateTranslation(self, key, content, dictionary, allLanguages):
+        old = self.translationFromDictionary(key, dictionary)
 
-        diff = self.getDiff(oldValues, newValues, allLanguages)
-        self.applyDiff(key, diff, translations)
+        jsonBegin = content.find('{')
+        jsonString = content[jsonBegin:]
+        new = json.loads(jsonString)
+        diff = self.getDiff(old, new, allLanguages)
+        self.applyDiff(key, diff, self.translations)
 
     def editTranslationForKey(self, key, dictionary, translations):
         allLanguages = list(translations.keys())
@@ -222,7 +228,7 @@ class App(ListViewDataSource):
         changed, content = self.openEditor(key, dictionary, allLanguages)
 
         if changed:
-            self.updateTranslation(key, content, dictionary, allLanguages, translations)
+            self.updateTranslation(key, content, dictionary, allLanguages)
 
 
     def getFilter(self):

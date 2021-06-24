@@ -14,7 +14,7 @@ from gupy.view import ListViewDataSource
 from importlib import import_module
 
 BLOCK_LEVEL = 2
-TRANSLATIONS_SUBDIRECTORY = 'src/app/commons/provider/translation/resources'
+TRANSLATIONS_SUBDIRECTORY = 'src/assets/i18n'
 TRANSLATIONS_PATTERN_TS   = '*.properties.ts'
 TRANSLATIONS_PATTERN_JSON = '*.json'
 

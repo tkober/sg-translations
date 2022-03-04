@@ -27,6 +27,7 @@ if [ -x "$(command -v conda)" ]; then
 fi
 
 echo "function $FUNCTION_NAME { $BASEDIR/$RUN_SCRIPT \$1; }" >> ~/.bash_profile
+echo "function $FUNCTION_NAME { $BASEDIR/$RUN_SCRIPT \$1; }" >> ~/.zshrc
 
 DEFAULT_JHA_HOME=~
 eval DEFAULT_JHA_HOME="$DEFAULT_JHA_HOME/taloom/just-hire-angular"
@@ -35,5 +36,6 @@ echo "Please provide the path to your Just Hire Angular directory. It will be sa
 read -p "\$$JHA_HOME_NAME [$DEFAULT_JHA_HOME]: " JHA_HOME
 JHA_HOME=${JHA_HOME:-$DEFAULT_JHA_HOME}
 echo "export $JHA_HOME_NAME=$JHA_HOME" >> ~/.bash_profile
+echo "export $JHA_HOME_NAME=$JHA_HOME" >> ~/.zshrc
 
 clear
